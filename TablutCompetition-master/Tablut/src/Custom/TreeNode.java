@@ -1,10 +1,13 @@
 package Custom;
 
 import it.unibo.ai.didattica.competition.tablut.domain.State;
+import it.unibo.ai.didattica.competition.tablut.domain.Action;
+import it.unibo.ai.didattica.competition.tablut.domain.Game;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class TreeNode {
+public class TreeNode{
     private State state;
     private TreeNode parent;
     private List<TreeNode> children;
@@ -15,6 +18,7 @@ public class TreeNode {
     public  double EstimatedValue;
     private boolean hasBeenExpanded;
     
+
     public TreeNode() {
     	//DEBUGGGG
     }
@@ -43,9 +47,14 @@ public class TreeNode {
     	this.children = new ArrayList<TreeNode>();
     }
     
+    
+
+
+    
     public State getState() { //we can read it differently
     	return this.state;
     }
+    
     
     public void updateState(State state) {
     	//checks to do about state before updating it
@@ -102,6 +111,13 @@ public class TreeNode {
     
 
     public void ExpandNode() {
+    	if(this.isFullyExpanded()) return;
+    	for(Action action : legalActions) {
+    		State newState = applyMove(this.state, action);
+    		TreeNode child = new TreeNode(newState, this);
+    		this.children.add(child);
+    	}
+    	
     	this.hasBeenExpanded = true;
     }
 
