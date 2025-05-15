@@ -23,60 +23,51 @@ public abstract class MCTSBase {
 	}
 	
 	
-	protected List<Action> getLegalActions(State state) {
-        List<Action> legalActions = new ArrayList<>();
-        State.Pawn[][] board = state.getBoard();
-        State.Turn turn = state.getTurn();
-        int size = board.length;
-        for (int fromRow = 0; fromRow < size; fromRow++) {
-            for (int fromCol = 0; fromCol < size; fromCol++) {
+	protected List<MoveResult> getLegalActionsAndResultingStates(State state) {
+		List<MoveResult> results = new ArrayList<>();
+	    State.Pawn[][] board = state.getBoard();
+	    State.Turn turn = state.getTurn();
+	    int size = board.length;
 
-                State.Pawn pawn = board[fromRow][fromCol];
+	    for (int fromRow = 0; fromRow < size; fromRow++) {
+	        for (int fromCol = 0; fromCol < size; fromCol++) {
+	            State.Pawn pawn = board[fromRow][fromCol];
+	            if (!isPlayersPawn(turn, pawn)) continue;
 
-                if (!isPlayersPawn(turn, pawn)) continue;
+	            addMovesInDirection(state, fromRow, fromCol, turn,  0,  1, results); // RIGHT
+	            addMovesInDirection(state, fromRow, fromCol, turn,  0, -1, results); // LEFT
+	            addMovesInDirection(state, fromRow, fromCol, turn,  1,  0, results); // DOWN
+	            addMovesInDirection(state, fromRow, fromCol, turn, -1,  0, results); // UP
+	        }
+	    }
 
-                // Prova a muoversi in 4 direzioni finché la cella è vuota
-                // RIGHT
-                for (int col = fromCol + 1; col < size; col++) {
-                    if (!board[fromRow][col].equals(State.Pawn.EMPTY)) break;
-                    tryMove(state, rules, fromRow, fromCol, fromRow, col, turn, legalActions);
-                }
+	    return results;
+	}
+    
+	
+	private void addMovesInDirection(State state, int fromRow, int fromCol, State.Turn turn,
+            int rowStep, int colStep, List<MoveResult> results) {
+		int row = fromRow + rowStep;
+		int col = fromCol + colStep;
+		State.Pawn[][] board = state.getBoard();
+		int size = board.length;
 
-                // LEFT
-                for (int col = fromCol - 1; col >= 0; col--) {
-                    if (!board[fromRow][col].equals(State.Pawn.EMPTY)) break;
-                    tryMove(state, rules, fromRow, fromCol, fromRow, col, turn, legalActions);
-                }
+		while (row >= 0 && row < size && col >= 0 && col < size && board[row][col].equals(State.Pawn.EMPTY)) {
+			try {
+					String from = state.getBox(fromRow, fromCol);
+					String to = state.getBox(row, col);
+					Action action = new Action(from, to, turn);
+					State cloned = state.clone();
+					State next = rules.checkMove(cloned, action);
+					results.add(new MoveResult(action, next));
+			} catch (Exception ignored) {
+				//non credo si debba far altro 
+			}
 
-                // DOWN
-                for (int row = fromRow + 1; row < size; row++) {
-                    if (!board[row][fromCol].equals(State.Pawn.EMPTY)) break;
-                    tryMove(state, rules, fromRow, fromCol, row, fromCol, turn, legalActions);
-                }
-
-                // UP
-                for (int row = fromRow - 1; row >= 0; row--) {
-                    if (!board[row][fromCol].equals(State.Pawn.EMPTY)) break;
-                    tryMove(state, rules, fromRow, fromCol, row, fromCol, turn, legalActions);
-                }
-            }
-        }
-
-        return legalActions;
-    }
-
-    protected void tryMove(State state, Game rules, int fromRow, int fromCol, int toRow, int toCol,
-                                State.Turn turn, List<Action> actions) {
-        try {
-            String from = state.getBox(fromRow, fromCol);
-            String to = state.getBox(toRow, toCol);
-            Action action = new Action(from, to, turn);
-            rules.checkMove(state.clone(), action);
-            actions.add(action);
-        } catch (Exception ignored) {
-        	///should we do something here?
-        }
-    }
+			row += rowStep;
+			col += colStep;
+		}
+	}
 
     protected boolean isPlayersPawn(State.Turn turn, State.Pawn pawn) {
         if (turn.equals(State.Turn.WHITE)) {
@@ -121,14 +112,14 @@ public abstract class MCTSBase {
 
         // Se è la radice o il genitore ha problemi, usa solo il valore stimato
         if (parent == null || parent.getVisitCount() == 0) {
-            return node.EstimatedValue;
+            return node.totalValue;
         }
 
         // Aggiungiamo robustezza con valori minimi per evitare log(0) o div/0
         double parentVisits = Math.max(parent.getVisitCount(), 1e-6);
         double nodeVisits = Math.max(node.getVisitCount(), 1e-6);
 
-        return node.EstimatedValue + C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
+        return node.getAverageValue() + C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
     }
 
 }

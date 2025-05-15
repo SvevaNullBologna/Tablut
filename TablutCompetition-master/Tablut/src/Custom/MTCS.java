@@ -25,6 +25,9 @@ public class MTCS extends MCTSBase {
 		
 		while(System.currentTimeMillis() - startTime < max_time) {
 			
+			
+			
+			
 		}
 	}
 	
@@ -36,7 +39,7 @@ public class MTCS extends MCTSBase {
 		while(!node.isTerminal() && node.isFullyExpanded()) {//finché non trova un nodo foglia/terminale e non ha espanso tutto il nodo... 
 			List<TreeNode> children = node.getChildren();
 			node = this.getChildWithMaxUCT(children); //cerca il nodo con il max UCT
-			if(node==null) break; //se non c'è un nodo sotto, vuol dire chiamo arrivati al capolinea. Si ferma
+			if(node==null) break; //se non c'è un nodo sotto, vuol dire chiamo arrivati al capolinea. Si ferma.
 		}
 		return node; //ATTEZIONE, può essere nullo!
 	}
@@ -48,7 +51,9 @@ public class MTCS extends MCTSBase {
 			
         }
 		
-		node.ExpandNode(this.getLegalActions(node.getState()),rules);
+		List<MoveResult> legalMoves = this.getLegalActionsAndResultingStates(node.getState());
+		node.ExpandNode(legalMoves, rules);
+		
 		return node.getChildren();
 	}
 

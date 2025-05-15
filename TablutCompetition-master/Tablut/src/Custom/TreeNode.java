@@ -9,13 +9,13 @@ import java.util.List;
 
 public class TreeNode{
     private State state;
+    private State.Turn turn;
     private TreeNode parent;
     private List<TreeNode> children;
-    private char operator; //operatore applicato per ottenere il nodo
+    private Action action; //azione applicata per ottenere il nodo
     private int depth;
-    private int path_cost; //costo del cammino stato iniziale - nodo. Può essere aggiornato
     private int visitCount;
-    public  double EstimatedValue;
+    public  Double totalValue;
     private boolean hasBeenExpanded;
     
 
@@ -23,33 +23,44 @@ public class TreeNode{
     	//DEBUGGGG
     }
     
-    public TreeNode(State state, TreeNode parent, char operator, int depth, int path_cost) {
+    public TreeNode(State state, TreeNode parent, Action action) {
     	this.state = state;
-    	this.parent = parent;
-    	this.operator = operator;
-    	this.depth = depth;
-    	this.path_cost = path_cost;
+    	this.turn = state.getTurn();
+    	if(parent!=null) {
+    		this.parent = parent;
+    		this.depth = parent.depth + 1;
+    		this.action = action;
+    		//
+    	}
+    	else {
+    		this.parent = parent;
+    		this.depth = 0;
+    		this.action = null;
+    	}
+    	
     	this.hasBeenExpanded = false;
     	this.visitCount = 0;
-    	this.EstimatedValue = 0.0;
+    	this.totalValue = 0.0;
     	this.children = new ArrayList<TreeNode>();
     }
-    
-    public TreeNode(State state, char operator, int depth, int path_cost) { //is root
-    	this.state = state;
-    	this.parent = null;
-    	this.operator = operator;
-    	this.depth = depth;
-    	this.path_cost = path_cost;
-    	this.hasBeenExpanded = false;
-    	this.visitCount = 0;
-    	this.EstimatedValue = 0.0;
-    	this.children = new ArrayList<TreeNode>();
+   
+    private Double evaluateTerminalState() {
+        State.Turn result = this.state.getTurn();
+
+        if (result == State.Turn.WHITEWIN) {
+            return this.turn == State.Turn.WHITE ? 1.0 : 0.0;
+        } else if (result == State.Turn.BLACKWIN) {
+            return this.turn == State.Turn.BLACK ? 1.0 : 0.0;
+        } else if (result == State.Turn.DRAW) {
+            return 0.5;
+        }
+
+        return null;
     }
-    
-    
 
-
+    public Double rollout() {
+    	return -1.0;
+    }
     
     public State getState() { //we can read it differently
     	return this.state;
@@ -73,23 +84,23 @@ public class TreeNode{
     	return depth;
     }
     
-    public int getPathCost(){
-    	return path_cost;
-    }
-    
-    public void updatePathCost(int path_cost){
-    	//checks to do about path_cost before updating it
-    	this.path_cost = path_cost;
-    }
-    
-    public char operator() {
-    	return operator;
+    public Action getOriginAction() {
+    	return action;
     }
    
     public int getVisitCount() {
     	return this.visitCount;
     }
     
+    public double getTotalValue() {
+    	return this.totalValue;
+    }
+    
+    public double getAverageValue()
+    {
+    	if(this.visitCount == 0 ) return 0.0;
+    	return this.totalValue / this.visitCount;
+    }
     
     public void addChild(TreeNode node) {
     	node.parent = this;
@@ -104,27 +115,18 @@ public class TreeNode{
     
     public void VisitNode(Double value) { 
     	if(value != null) {
-    		this.EstimatedValue += value;
+    		this.totalValue += value;
     	}
     	this.visitCount++;
     }
     
 
-    public void ExpandNode(List<Action> legalActions, Game rules) {
+    public void ExpandNode(List<MoveResult> legalMoves, Game rules) {
     	if(this.isFullyExpanded()) return;
     	
-    	for(Action action : legalActions) {
-    		try {
-    			State currentState = this.getState();
-    			State nextState = currentState.clone();
-    			nextState = rules.
-    			State initial_state = this.state.clone();
-    			rules.checkMove(initial_state, action);
-    			/////////da continuar
-    		}
-    		catch(Exception ignored) {
-    			//mossa illegale. Ignoriamo
-    		}
+    	for(MoveResult move : legalMoves) {
+    		TreeNode child = new TreeNode(move.resultingState, this, move.action);
+    		this.addChild(child);
     	}
     	
     	this.hasBeenExpanded = true;
