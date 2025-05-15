@@ -1,11 +1,7 @@
 package Custom;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.platform.engine.support.hierarchical.Node;
-
-import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 
@@ -21,20 +17,34 @@ public class MTCS extends MCTSBase {
 	}
 
 	public void Montecarlo(TreeNode root) {
-		long startTime = System.currentTimeMillis();
-		
-		while(System.currentTimeMillis() - startTime < max_time) {
-			
-			
-			
-			
-		}
+	    long startTime = System.currentTimeMillis();
+	    boolean hasSimulatedAtLeastOnce = false;
+
+	    while (System.currentTimeMillis() - startTime < max_time) {
+	        TreeNode selected = select(root);
+	        if (selected == null) continue;
+
+	        List<TreeNode> children = expand(selected);
+	        if (children == null || children.isEmpty()) continue;
+
+	        TreeNode child = this.getChildWithMaxUCT(children);
+	        if (child == null) continue;
+
+	        double result = simulate(child);
+	        backpropagate(child, result);
+	        hasSimulatedAtLeastOnce = true;
+	    }
+
+	    if (!hasSimulatedAtLeastOnce) {
+	        throw new IllegalStateException("Monte Carlo failed: no valid simulations were performed.");
+	    }
 	}
+
 	
 	
 
 	
-	private TreeNode select(TreeNode starting_node) {
+	private TreeNode select(TreeNode starting_node) {//Si scende lungo l'albero fino a un nodo foglia
 		TreeNode node = starting_node;
 		while(!node.isTerminal() && node.isFullyExpanded()) {//finché non trova un nodo foglia/terminale e non ha espanso tutto il nodo... 
 			List<TreeNode> children = node.getChildren();
@@ -45,8 +55,8 @@ public class MTCS extends MCTSBase {
 	}
 
 	
-	private List<TreeNode> expand(TreeNode node) {
-		if (node.isFullyExpanded()) {
+	private List<TreeNode> expand(TreeNode node) {//si espande il nodo foglia aggiungendo uno o più figli
+		if (node.isTerminal() || node.isFullyExpanded()) {
 			return node.getChildren();
 			
         }
@@ -59,15 +69,34 @@ public class MTCS extends MCTSBase {
 
 	
 	private double simulate(TreeNode node) {
-		
-		// TODO Auto-generated method stub
-		return 0;
+	    State simulating_state = node.getState().clone();
+	    State.Turn starting_player = node.getState().getTurn(); // use original turn
+
+	    while (!isTerminal(simulating_state)) {
+	        List<MoveResult> legalMoves = this.getLegalActionsAndResultingStates(simulating_state);
+	        if (legalMoves.isEmpty()) break;
+
+	        MoveResult move = this.getRandomMove(legalMoves);
+	        simulating_state = move.resultingState;
+	    }
+
+	    State.Turn outcome = simulating_state.getTurn(); // This now holds WHITEWIN, BLACKWIN, or DRAW
+
+	    if (outcome == State.Turn.DRAW) {
+	        return 0.5;
+	    } else if ((outcome == State.Turn.WHITEWIN && starting_player == State.Turn.WHITE) ||
+	               (outcome == State.Turn.BLACKWIN && starting_player == State.Turn.BLACK)) {
+	        return 1.0;
+	    } else {
+	        return 0.0;
+	    }
 	}
 
+
 	
-	private void backpropagate(TreeNode node, double value) {
+	private void backpropagate(TreeNode node, double value) { //si propagano i risultati della simulazione lungo il percorso
 		while(node != null) {
-			node.VisitNode(value);
+			node.VisitNode(value); //fa anche l'update già che visita
 			node = node.getParent();
 		}
 	}

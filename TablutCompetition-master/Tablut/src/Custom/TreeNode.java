@@ -19,10 +19,6 @@ public class TreeNode{
     private boolean hasBeenExpanded;
     
 
-    public TreeNode() {
-    	//DEBUGGGG
-    }
-    
     public TreeNode(State state, TreeNode parent, Action action) {
     	this.state = state;
     	this.turn = state.getTurn();
@@ -44,7 +40,7 @@ public class TreeNode{
     	this.children = new ArrayList<TreeNode>();
     }
    
-    private Double evaluateTerminalState() {
+    /*private Double evaluateTerminalState() {
         State.Turn result = this.state.getTurn();
 
         if (result == State.Turn.WHITEWIN) {
@@ -56,10 +52,10 @@ public class TreeNode{
         }
 
         return null;
-    }
-
-    public Double rollout() {
-    	return -1.0;
+    }*/
+    
+    public State.Turn getTurn(){
+    	return this.turn;
     }
     
     public State getState() { //we can read it differently
@@ -142,4 +138,7 @@ public class TreeNode{
                turn.equals(State.Turn.BLACKWIN) ||
                turn.equals(State.Turn.DRAW);
     }
+    
+    
+    
 }

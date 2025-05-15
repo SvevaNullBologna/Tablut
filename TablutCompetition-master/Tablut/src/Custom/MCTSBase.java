@@ -98,7 +98,7 @@ public abstract class MCTSBase {
     		return null;
     	}
     	else {
-    		return bestNodes.get(new Random().nextInt(bestNodes.size())); //risolviamo i pareggi scegliendone uno randomicamente
+    		return getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
     	}
     }
     
@@ -121,5 +121,23 @@ public abstract class MCTSBase {
 
         return node.getAverageValue() + C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
     }
+    
+    protected TreeNode getRandomNode(List<TreeNode> nodes) {
+    	return nodes.get(new Random().nextInt(nodes.size()));
+    }
+    
+    protected MoveResult getRandomMove(List<MoveResult> moves) {
+    	return moves.get(new Random().nextInt(moves.size()));
+    }
+    
+    ///////////////////////////////////////////////////////////// 
+    
+    protected boolean isTerminal(State state) {
+        State.Turn turn = state.getTurn();
+        return turn == State.Turn.WHITEWIN || turn == State.Turn.BLACKWIN || turn == State.Turn.DRAW;
+    }
+    
+    
 
+    
 }
