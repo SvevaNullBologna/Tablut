@@ -110,22 +110,34 @@ public class TreeNode{
     }
     
 
-    public void ExpandNode() {
+    public void ExpandNode(List<Action> legalActions, Game rules) {
     	if(this.isFullyExpanded()) return;
+    	
     	for(Action action : legalActions) {
-    		State newState = applyMove(this.state, action);
-    		TreeNode child = new TreeNode(newState, this);
-    		this.children.add(child);
+    		try {
+    			State currentState = this.getState();
+    			State nextState = currentState.clone();
+    			nextState = rules.
+    			State initial_state = this.state.clone();
+    			rules.checkMove(initial_state, action);
+    			/////////da continuar
+    		}
+    		catch(Exception ignored) {
+    			//mossa illegale. Ignoriamo
+    		}
     	}
     	
     	this.hasBeenExpanded = true;
     }
 
     public boolean isFullyExpanded() {
-    	return children.stream().allMatch(child -> child.visitCount>0);
+    	return hasBeenExpanded;
     }
     
     public boolean isTerminal() {
-    	return this.children.size() == 0;
+    	State.Turn turn = this.state.getTurn();
+        return turn.equals(State.Turn.WHITEWIN) ||
+               turn.equals(State.Turn.BLACKWIN) ||
+               turn.equals(State.Turn.DRAW);
     }
 }
