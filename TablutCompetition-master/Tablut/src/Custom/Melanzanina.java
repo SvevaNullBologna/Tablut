@@ -2,21 +2,23 @@ package Custom;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 import it.unibo.ai.didattica.competition.tablut.domain.*;
 
 
 public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
-
-	boolean firstRun = true;
+	public static final String PLAYER_NAME = "Melanzanina";
+	
 	Game tablut;
 	TreeNode current;
 	TreeNode last;
 	
 	public Melanzanina(String color , String ipAddress) throws UnknownHostException, IOException {
-		super(color, "MELANZANINA", 60 , ipAddress);
+		super(color, PLAYER_NAME, 60 , ipAddress);
+		// TODO Auto-generated constructor stub
+	}
+	
+	public Melanzanina(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
+		super(player.toUpperCase(), PLAYER_NAME, timeout, ipAddress);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -25,10 +27,28 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	//declareName() = write the name to the server
 	//write(Action) = write to the server an action
 	//read() = gets state from server
-	
 
 	public static void main(String[] args) throws IOException {
+		String ip = "localhost";
+        int timeout = 60;
 		
+		if (args.length != 3) {
+			System.out.printf("Usage: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\\n\")");
+			System.exit(0);
+		} else if (args[0].toUpperCase()!="WHITE" && args[0].toUpperCase()!="BLACK") {
+			System.out.println("You must specify which player you are [WHITE | BLACK]");
+		}
+		try {
+            timeout = Integer.parseInt(args[1]);
+            ip = args[2];
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            System.out.printf("ERROR: Timeout must be an integer representing seconds\n" +
+                    "USAGE: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\n");
+            System.exit(1);
+        }
+		Melanzanina player = new Melanzanina(args[0].toUpperCase(), timeout, ip);
+		player.run();
 	}
 	
 
