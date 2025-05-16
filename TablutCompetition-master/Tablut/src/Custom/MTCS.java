@@ -20,7 +20,7 @@ public class MTCS extends MCTSBase {
 	    long startTime = System.currentTimeMillis();
 	    boolean hasSimulatedAtLeastOnce = false;
 
-	    while (System.currentTimeMillis() - startTime < max_time) {
+	    while (System.currentTimeMillis() - startTime < (max_time-2)) {
 	        TreeNode selected = select(root);
 	        if (selected == null) continue;
 

@@ -30,17 +30,20 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	//read() = gets state from server
 	
 
-	
+	public static void main(String[] args) throws IOException {
+		
+	}
 	
 
 	
 	@Override
 	public void run() {
 		//RICORDA DI PASSARE ALL'ALGORITMO 
-		if(firstRun) {
-			tablut = new GameTablut();
-			setName(this.getName());
-		}
+		try {
+            this.declareName();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 		observe();
 		//think();
 		//act();
