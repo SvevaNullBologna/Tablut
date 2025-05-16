@@ -76,7 +76,15 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
             
             if(this.getPlayer().equals(State.Turn.WHITE)) {
             	if(state.getTurn().equals(State.Turn.WHITE)) {
-            		//TODO add white turn logic
+            		
+            		Action a; //TODO add white turn logic to get best action
+            		
+            		try {
+                        this.write(a);
+                    } catch (ClassNotFoundException | IOException e) {
+                        e.printStackTrace();
+                    }
+            		
             	}else if(state.getTurn().equals(State.Turn.BLACK)){
             		//opponent turn. wait...
             	}else {
@@ -85,7 +93,15 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
             	}
             }else{
             	if(state.getTurn().equals(State.Turn.BLACK)) {
-            		//TODO add black turn logic
+            		
+            		Action a; //TODO add black turn logic to get best action
+            		
+            		try {
+                        this.write(a);
+                    } catch (ClassNotFoundException | IOException e) {
+                        e.printStackTrace();
+                    }
+            		
             	}else if(state.getTurn().equals(State.Turn.WHITE)){
             		//opponent turn. wait...
             	}else {
