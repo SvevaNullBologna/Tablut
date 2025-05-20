@@ -102,7 +102,7 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	            	//prima valutava mossa solo basata su totalValue
 	            	//quindi una simulazione fortunata lo sballava molto
 	            	//ora fai rapporto tra value e numero visite per fare value medio
-	            	double avg = child.totalValue / (double) child.getVisitCount();
+	            	double avg = child.totalValue;
 	                if (avg > maxAvg) {
 	                    maxAvg = avg;
 	                    favorite = child;

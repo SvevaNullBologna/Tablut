@@ -36,10 +36,6 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private int repeated_moves_allowed;
 
 	/**
-	 * Number of states kept in memory. negative value means infinite.
-	 */
-	private int cache_size;
-	/**
 	 * Counter for the moves without capturing that have occurred
 	 */
 	private int movesWithutCapturing;
@@ -48,8 +44,6 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private FileHandler fh;
 	private Logger loggGame;
 	private List<String> citadels;
-	// private List<String> strangeCitadels;
-	private List<State> drawConditions;
 
 	public AIMAGameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName,
 			String blackName) {
@@ -60,7 +54,6 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 			String whiteName, String blackName) {
 		super();
 		this.repeated_moves_allowed = repeated_moves_allowed;
-		this.cache_size = cache_size;
 		this.movesWithutCapturing = 0;
 
 		Path p = Paths.get(logs_folder + File.separator + "_" + whiteName + "_vs_" + blackName + "_"
@@ -89,7 +82,6 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		loggGame.fine("Repeated moves allowed:\t" + repeated_moves_allowed + "\tCache:\t" + cache_size);
 		loggGame.fine("Inizio partita");
 		loggGame.fine("Stato:\n" + state.toString());
-		drawConditions = new ArrayList<State>();
 		this.citadels = new ArrayList<String>();
 		// this.strangeCitadels = new ArrayList<String>();
 		this.citadels.add("a4");
@@ -272,19 +264,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		}
 
 		// se sono arrivato qui, muovo la pedina
+		List<State> drawConditions = ((SimulatedState) state).getDrawConditions();
 		state = this.movePawn(state, a);
-
 		// a questo punto controllo lo stato per eventuali catture
 		if (state.getTurn().equalsTurn("W")) {
 			state = this.checkCaptureBlack(state, a);
 		} else if (state.getTurn().equalsTurn("B")) {
 			state = this.checkCaptureWhite(state, a);
-		}
-
-		// if something has been captured, clear cache for draws
-		if (this.movesWithutCapturing == 0) {
-			this.drawConditions.clear();
-			this.loggGame.fine("Capture! Draw cache cleared!");
 		}
 
 		// controllo pareggio
@@ -317,13 +303,6 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		if (trovati > 0) {
 			this.loggGame.fine("Equal states found: " + trovati);
 		}
-		if (cache_size >= 0 && this.drawConditions.size() > cache_size) {
-			this.drawConditions.remove(0);
-		}
-		this.drawConditions.add(state.clone());
-
-		this.loggGame.fine("Current draw cache size: " + this.drawConditions.size());
-
 		this.loggGame.fine("Stato:\n" + state.toString());
 		System.out.println("Stato:\n" + state.toString());
 
@@ -509,7 +488,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// ho il re sotto
 		if (a.getRowTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo() + 1, a.getColumnTo()).equalsPawn("K")) {
-			//System.out.println("Ho il re sotto");
+			// System.out.println("Ho il re sotto");
 			// re sul trono
 			if (state.getBox(a.getRowTo() + 1, a.getColumnTo()).equals("e5")) {
 				if (state.getPawn(5, 4).equalsPawn("B") && state.getPawn(4, 5).equalsPawn("B")
@@ -738,170 +717,147 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return repeated_moves_allowed;
 	}
 
-	public int getCache_size() {
-		return cache_size;
-	}
+	Map<State, Map<Action, State>> results = new HashMap<>();
 
-	public List<State> getDrawConditions() {
-		return drawConditions;
-	}
-
-	public void clearDrawConditions() {
-		drawConditions.clear();
-	}
-
-	Map<Action, State> results = new HashMap<>();
-	State.Turn actualState;
-	
 	/**
-	 * Method that compute a list of all possible actions for the current player according to the rules of the game
+	 * Method that compute a list of all possible actions for the current player
+	 * according to the rules of the game
 	 *
 	 * @param state Current state of the game
 	 *
-	 * @return List of all the Action allowed from current state for each pawn of the player
+	 * @return List of all the Action allowed from current state for each pawn of
+	 *         the player
 	 */
 	@Override
-	public List<Action> getActions(State state)
-	{
+	public List<Action> getActions(State state) {
 		State.Turn turn = state.getTurn();
-		actualState = turn;
-		results.clear();
+		if (!results.containsKey(state))
+			results.put(state, new HashMap<>());
+		SimulatedState converted = (SimulatedState) state;
 		// Loop through rows
-		for (int i = 0; i < state.getBoard().length; i++)
-		{
+		for (int i = 0; i < state.getBoard().length; i++) {
 			// Loop through columns
-			for (int j = 0; j < state.getBoard().length; j++)
-			{
+			for (int j = 0; j < state.getBoard().length; j++) {
 				State.Pawn p = state.getPawn(i, j);
 
-				// If pawn color  is equal of turn color
+				// If pawn color is equal of turn color
 				if (p.toString().equals(turn.toString())
-						|| (p.equals(State.Pawn.KING) && turn.equals(State.Turn.WHITE)))
-				{
+						|| (p.equals(State.Pawn.KING) && turn.equals(State.Turn.WHITE))) {
 					// Search on top of pawn
 					String from, to;
 					Action action;
 					try {
-						for (int k = i-1; k >= 0; k--) {
+						for (int k = i - 1; k >= 0; k--) {
 							from = state.getBox(i, j);
 							to = state.getBox(k, j);
 							action = new Action(from, to, turn);
-							try {
-								State result = checkMove(state.clone(), action);
-								results.put(action, result);
-							}
-							catch(Exception e) {
-								break;
-							}
+							if (!results.get(state).containsKey(action))
+								try {
+									State result = checkMove(converted.clone(), action);
+									results.get(state).put(action, result);
+								} catch (Exception e) {
+									break;
+								}
 						}
 						// Search on bottom of pawn
-						for (int k = i+1; k < state.getBoard().length; k++)
-						{
+						for (int k = i + 1; k < state.getBoard().length; k++) {
 
 							from = state.getBox(i, j);
 							to = state.getBox(k, j);
 							action = new Action(from, to, turn);
-							try {
-								State result = checkMove(state.clone(), action);
-								results.put(action, result);
-							}
-							catch(Exception e) {
-								break;
-							}
+							if (!results.get(state).containsKey(action))
+								try {
+									State result = checkMove(converted.clone(), action);
+									results.get(state).put(action, result);
+								} catch (Exception e) {
+									break;
+								}
 						}
 
 						// Search on left of pawn
-						for (int k = j-1; k >= 0; k--)
-						{
+						for (int k = j - 1; k >= 0; k--) {
 							from = state.getBox(i, j);
 							to = state.getBox(i, k);
 							action = new Action(from, to, turn);
-							try {
-								State result = checkMove(state.clone(), action);
-								results.put(action, result);
-							}
-							catch(Exception e) {
-								break;
-							}
+							if (!results.get(state).containsKey(action))
+								try {
+									State result = checkMove(converted.clone(), action);
+									results.get(state).put(action, result);
+								} catch (Exception e) {
+									break;
+								}
 						}
-
 						// Search on right of pawn
-						for (int k = j+1; k < state.getBoard().length; k++)
-						{
+						for (int k = j + 1; k < state.getBoard().length; k++) {
 
 							from = state.getBox(i, j);
 							to = state.getBox(i, k);
 							action = new Action(from, to, turn);
-							try {
-								State result = checkMove(state.clone(), action);
-								results.put(action, result);
-							}
-							catch(Exception e) {
-								break;
-							}
+							if (!results.get(state).containsKey(action))
+								try {
+									State result = checkMove(converted.clone(), action);
+									results.get(state).put(action, result);
+								} catch (Exception e) {
+									break;
+								}
 						}
-					}
-					catch(Exception e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 						System.exit(2);
 					}
 				}
 			}
 		}
-		return results.keySet().stream().toList();
+		return results.get(state).keySet().stream().toList();
 	}
 
 	/**
-	 * Method that performs an action in a given state and returns the resulting state
+	 * Method that performs an action in a given state and returns the resulting
+	 * state
 	 *
-	 * @param state Current state
+	 * @param state  Current state
 	 * @param action Action admissible on the given state
 	 *
 	 * @return State obtained after performing the action
 	 */
 	@Override
-	public State getResult(State state, Action action)
-	{
-		try {
-			if(actualState.equals(state.getTurn())) {
-				if(!results.containsKey(action))
-					results.put(action, checkMove(state.clone(), action));
-				return results.get(action);
+	public State getResult(State state, Action action) {
+		if (!results.containsKey(state))
+			results.put(state, new HashMap<>());
+		if (!results.get(state).containsKey(action))
+			try {
+				results.get(state).put(action, checkMove(((SimulatedState) state).clone(), action));
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(3);
 			}
-			else return checkMove(state.clone(), action);
-		} catch(Exception e) {
-			e.printStackTrace();
-			System.exit(3);
-		}
-		return null;
+		return results.get(state).get(action);
 	}
 
 	/**
-	 * Check if a state is terminal, since a player has either won or drawn (i.e. the game ends)
+	 * Check if a state is terminal, since a player has either won or drawn (i.e.
+	 * the game ends)
 	 *
 	 * @param state Current state of the game
 	 *
 	 * @return true if the current state is terminal, otherwise false
 	 */
 	@Override
-	public boolean isTerminal(State state)
-	{
-		return state.getTurn().equals(State.Turn.WHITEWIN) ||
-				state.getTurn().equals(State.Turn.BLACKWIN) ||
-				state.getTurn().equals(State.Turn.DRAW);
+	public boolean isTerminal(State state) {
+		return state.getTurn().equals(State.Turn.WHITEWIN) || state.getTurn().equals(State.Turn.BLACKWIN)
+				|| state.getTurn().equals(State.Turn.DRAW);
 	}
 
 	/**
 	 * Method to evaluate a state using heuristics
 	 *
-	 * @param state	Current state
-	 * @param turn	Player that want to find the best moves in the search space
+	 * @param state Current state
+	 * @param turn  Player that want to find the best moves in the search space
 	 *
 	 * @return Evaluation of the state
 	 */
 	@Override
-	public double getUtility(State state, State.Turn turn)
-	{
+	public double getUtility(State state, State.Turn turn) {
 		// Terminal state
 		if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.BLACKWIN))
 				|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.WHITEWIN)))
@@ -909,22 +865,19 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
 				|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
 			return Double.NEGATIVE_INFINITY; // Lose
-		else if (state.getTurn().equals(State.Turn.DRAW)) return 0;
-
+		System.out.println(state.getTurn() + " " + turn);
 		// Non-terminal state => get Heuristics for the current state
 		Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state) : new BlackHeuristics(state);
 		return heuristics.evaluateState();
 	}
 
 	@Override
-	public State getInitialState()
-	{
+	public State getInitialState() {
 		return null;
 	}
 
 	@Override
-	public State.Turn[] getPlayers()
-	{
+	public State.Turn[] getPlayers() {
 		return State.Turn.values();
 	}
 
@@ -935,6 +888,6 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 
 	@Override
 	public void endGame(State state) {
-		this.loggGame.fine("Stato:\n"+state.toString());
+		this.loggGame.fine("Stato:\n" + state.toString());
 	}
 }

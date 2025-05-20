@@ -50,8 +50,10 @@ public class WhiteHeuristics extends Heuristics{
         double stateValue = 0.0;
 
         int[] kingPos = kingPosition(state);
-        if(kingPos[0]==0 || kingPos[1]==0)
+        if(kingPos[0]==0 || kingPos[1]==0) {
+        	System.out.println(state.getTurn());
         	return Double.POSITIVE_INFINITY;
+        }
         // If king can be captured PRUNE THOSE MFS
         else if (canBeCaptured(state, kingPos, State.Pawn.KING))
             return Double.NEGATIVE_INFINITY;
