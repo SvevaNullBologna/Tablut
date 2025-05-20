@@ -95,7 +95,7 @@ public class Server implements Runnable {
 
 	public Server(int timeout, int cacheSize, int numErrors, int repeated, int game, boolean gui) {
 		this.gameC = game;
-		this.enableGui = gui;
+		this.enableGui = true;
 		this.time = timeout;
 		this.moveCache = cacheSize;
 		this.errors = numErrors;
@@ -135,8 +135,8 @@ public class Server implements Runnable {
 		options.addOption("e", "errors", true, "errors must be an integer >= 0; default: 0");
 		options.addOption("s", "repeatedState", true, "repeatedStates must be an integer >= 0; default: 0");
 		options.addOption("r","game rules", true, "game rules must be an integer; 1 for Tablut, 2 for Modern, 3 for Brandub, 4 for Ashton; default: 4");
-		options.addOption("g","enableGUI", false, "enableGUI if option is present");
-		options.addOption("R", "replay", true, "replay mode: specify txt file containing stdout from game and replay the moves");
+		options.addOption("g","enableGUI", true, "enableGUI if option is present");
+		options.addOption("R", "replay", false, "replay mode: specify txt file containing stdout from game and replay the moves");
 
 		HelpFormatter formatter = new HelpFormatter();
 		formatter.printHelp("java Server", options);

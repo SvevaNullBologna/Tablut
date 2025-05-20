@@ -9,18 +9,20 @@ import java.util.logging.Logger;
 
 import it.unibo.ai.didattica.competition.tablut.domain.*;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
+import aima.core.search.adversarial.*;
+import aima.core.search.adversarial.Game;
 
-public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
+public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
 
-	Game tablut;
+	AIMAGameAshtonTablut tablut;
 	TreeNode current;
 	TreeNode last;
-	MCTS mcts;
+	MonteCarloTreeSearch<State,Action,State.Turn> mcts;
 
-	public Melanzanina(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
+	public MelanzaninaAIMA(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
-        this.tablut = new GameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");
-        this.mcts = new MCTS(timeout, 1, tablut);
+        this.tablut = new AIMAGameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");;
+        this.mcts = new MonteCarloTreeSearch<State, Action, Turn>(tablut,1,timeout);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -47,7 +49,7 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 					+ "USAGE: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\n");
 			System.exit(1);
 		}
-		Melanzanina player = new Melanzanina(args[0], timeout, ip);
+		MelanzaninaAIMA player = new MelanzaninaAIMA(args[0], timeout, ip);
 		player.run();
 	}
 
@@ -80,12 +82,25 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	            break;
 
 	        if (this.getPlayer().equals(state.getTurn())) {
-	            last = current;
-	            current = new TreeNode(state, last, null);
+
 	            System.setOut(nullStream); // Java 11+
 	            Logger gameLogger = Logger.getLogger("GameLog");
 	            gameLogger.setUseParentHandlers(false);	            
-	            mcts.montecarlo(current);
+	        	Action best=mcts.makeDecision(state);
+	            System.setOut(originalOut); // ripristina output
+	            try {
+	                this.write(best);
+	            } catch (ClassNotFoundException | IOException e) {
+	                e.printStackTrace();
+	            }
+	        	/*last = current;
+	            current = new TreeNode(state, last, null);
+	            System.setOut(nullStream); // Java 11+
+	            Logger gameLogger = Logger.getLogger("GameLog");
+	            gameLogger.setUseParentHandlers(false);	    
+	            
+	            //mcts.montecarlo(current);
+	            
 	            System.setOut(originalOut); // ripristina output
 	            TreeNode favorite = null;
 	            double max = Double.NEGATIVE_INFINITY;
@@ -105,12 +120,13 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	            }
 
 	            System.out.println("Mossa scelta: " + favorite.getOriginAction());
-
+				
 	            try {
 	                this.write(favorite.getOriginAction());
 	            } catch (ClassNotFoundException | IOException e) {
 	                e.printStackTrace();
-	            }
+	            }*/
+	            
 	        }
 	    }
 	}

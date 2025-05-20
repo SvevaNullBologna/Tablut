@@ -5,22 +5,22 @@ import java.util.List;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 
-public class MTCS extends MCTSBase {
+public class MCTS extends MCTSBase {
 	private static Game rules;
 	private int max_time; 
 	private int max_memory;
 	
-	public MTCS(int max_time, int max_memory, Game rules) {
+	public MCTS(int max_time, int max_memory, Game rules) {
 		super(rules);
 		this.max_time = max_time;
 		this.max_memory = max_memory;
 	}
 
-	public void Montecarlo(TreeNode root) {
+	public void montecarlo(TreeNode root) {
 	    long startTime = System.currentTimeMillis();
 	    boolean hasSimulatedAtLeastOnce = false;
 
-	    while (System.currentTimeMillis() - startTime < (max_time-2)) {
+	    while (System.currentTimeMillis() - startTime < (max_time-1500)) {
 	        TreeNode selected = select(root);
 	        if (selected == null) continue;
 
@@ -34,15 +34,11 @@ public class MTCS extends MCTSBase {
 	        backpropagate(child, result);
 	        hasSimulatedAtLeastOnce = true;
 	    }
-
+	    
 	    if (!hasSimulatedAtLeastOnce) {
 	        throw new IllegalStateException("Monte Carlo failed: no valid simulations were performed.");
 	    }
 	}
-
-	
-	
-
 	
 	private TreeNode select(TreeNode starting_node) {//Si scende lungo l'albero fino a un nodo foglia
 		TreeNode node = starting_node;

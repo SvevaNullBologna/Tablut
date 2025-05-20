@@ -124,7 +124,52 @@ public abstract class MCTSBase {
     
     protected TreeNode getRandomNode(List<TreeNode> nodes) {
     	return nodes.get(new Random().nextInt(nodes.size()));
+    	/*
+    	double totalWeight = 0.0;
+
+        Heuristics heuristic;
+        State state;
+        List<TreeNode> validNodes = new ArrayList<>();
+        List<Double> weights = new ArrayList<>();
+
+        for (TreeNode node : nodes) {
+            state = node.getState();
+            heuristic = state.getTurn().equalsTurn("Black")
+                ? new BlackHeuristics(state)
+                : new WhiteHeuristics(state);
+
+            double weight = heuristic.evaluateState();
+
+            // SCARTA mosse che portano a sconfitta sicura
+            if (weight < 0) {
+                weight=0;
+            }
+
+            validNodes.add(node);
+            weights.add(weight);
+            totalWeight += weight;
+        }
+
+        if (validNodes.isEmpty()) {
+            // Fallback: tutte le mosse portavano a disfatta → selezione casuale "rassegnata"
+            return nodes.get(new Random().nextInt(nodes.size()));
+        }
+
+        double r = new Random().nextDouble() * totalWeight;
+        double cumulative = 0.0;
+
+        for (int i = 0; i < validNodes.size(); i++) {
+            cumulative += weights.get(i);
+            if (r < cumulative) {
+                return validNodes.get(i);
+            }
+        }
+
+        // Fallback: mai raggiunto, ma serve
+        return validNodes.get(validNodes.size() - 1);
+        */
     }
+    
     
     protected MoveResult getRandomMove(List<MoveResult> moves) {
     	return moves.get(new Random().nextInt(moves.size()));
