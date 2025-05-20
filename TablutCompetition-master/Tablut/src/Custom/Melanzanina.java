@@ -90,7 +90,14 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	            TreeNode favorite = null;
 	            double max = Double.NEGATIVE_INFINITY;
 	            double maxAvg=0;
-	            for (TreeNode child : current.getChildren()) { //TODO volendo pesare con totalValue/visitCount
+	            for (TreeNode child : current.getChildren()) { 
+	            	
+	            	//questo impedisce completamente di fare mossa inversa della precedente
+	            	/*if (last != null && last.getOriginAction() != null &&
+            	        isReverseMove(child.getOriginAction(), last.getOriginAction())) {
+            	        continue; // evita la mossa speculare dell’ultimo turno
+            	    }*/ 
+	            	
 	            	double avg = child.totalValue / (double) child.getVisitCount();
 	                if (avg > maxAvg) {
 	                    maxAvg = avg;
@@ -120,5 +127,9 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	        }
 	    }
 	}
+	
+	/*private boolean isReverseMove(Action a1, Action a2) {
+	    return a1.getFrom().equals(a2.getTo()) && a1.getTo().equals(a2.getFrom());
+	}*/
 
 }
