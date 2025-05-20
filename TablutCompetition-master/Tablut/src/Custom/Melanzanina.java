@@ -16,6 +16,7 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	TreeNode current;
 	TreeNode last;
 	MCTS mcts;
+	private final Random rand = new Random();
 
 	public Melanzanina(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
@@ -58,7 +59,6 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	    }
-	    Random rand = new Random();
 	    State state = new StateTablut();
 	    PrintStream originalOut = System.out;
 	    PrintStream nullStream = new PrintStream(new OutputStream() {
@@ -89,11 +89,17 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	            System.setOut(originalOut); // ripristina output
 	            TreeNode favorite = null;
 	            double max = Double.NEGATIVE_INFINITY;
-	            for (TreeNode child : current.getChildren()) { //volendo pesare con totalValue/visitCount
-	                if (child.totalValue > max) {
-	                    max = child.totalValue;
+	            double maxAvg=0;
+	            for (TreeNode child : current.getChildren()) { //TODO volendo pesare con totalValue/visitCount
+	            	double avg = child.totalValue / (double) child.getVisitCount();
+	                if (avg > maxAvg) {
+	                    maxAvg = avg;
 	                    favorite = child;
-	                } else if (child.totalValue == max) {
+	                }
+	            	/*if (child.totalValue > max) {
+	                    max = child.totalValue;
+	                    favorite = child;*/
+	                else if (avg == max) {
 	                    if (favorite == null || rand.nextInt(2)>0) {
 	                        favorite = child;
 	                    }

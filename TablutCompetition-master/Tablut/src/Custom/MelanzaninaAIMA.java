@@ -22,7 +22,7 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 	public MelanzaninaAIMA(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
         this.tablut = new AIMAGameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");;
-        this.mcts = new MonteCarloTreeSearch<State, Action, Turn>(tablut,1,timeout);
+        this.mcts = new MonteCarloTreeSearch<State, Action, Turn>(tablut,0,timeout);
 		// TODO Auto-generated constructor stub
 	}
 

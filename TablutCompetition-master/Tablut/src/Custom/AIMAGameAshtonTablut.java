@@ -909,6 +909,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
 				|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
 			return Double.NEGATIVE_INFINITY; // Lose
+		else if (state.getTurn().equals(State.Turn.DRAW)) return 0;
 
 		// Non-terminal state => get Heuristics for the current state
 		Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state) : new BlackHeuristics(state);
