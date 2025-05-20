@@ -98,6 +98,10 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
             	        continue; // evita la mossa speculare dell’ultimo turno
             	    }*/ 
 	            	
+	            	
+	            	//prima valutava mossa solo basata su totalValue
+	            	//quindi una simulazione fortunata lo sballava molto
+	            	//ora fai rapporto tra value e numero visite per fare value medio
 	            	double avg = child.totalValue / (double) child.getVisitCount();
 	                if (avg > maxAvg) {
 	                    maxAvg = avg;
