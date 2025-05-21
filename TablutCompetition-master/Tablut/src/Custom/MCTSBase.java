@@ -11,17 +11,12 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 public abstract class MCTSBase {
 
 	protected Game rules;
-	protected double C = Math.sqrt(2);
-	
+
 	public MCTSBase(Game rules) {
 		this.rules = rules;
 	}
-	
-	
-	public void setUCTConstant(double C) {
-		this.C = C;
-	}
-	
+
+
 	
 	protected List<MoveResult> getLegalActionsAndResultingStates(State state) {
 		List<MoveResult> results = new ArrayList<>();
@@ -78,8 +73,19 @@ public abstract class MCTSBase {
     }
     
     ////////////////////////////////////////////////////
-    
-    protected TreeNode getChildWithMaxUCT(List<TreeNode> children) {
+
+
+	protected TreeNode getChildWithBestUCT(List<TreeNode> children, State.Turn turn){
+		if(turn == State.Turn.BLACK) {
+			// Tocca a noi: massimizziamo
+			return getChildWithMaxUCT(children);
+		} else {
+			// Tocca all'avversario: minimizziamo
+			return getChildWithMinUCT(children);
+		}
+	}
+
+    private TreeNode getChildWithMaxUCT(List<TreeNode> children) {
     	double maxUCT = Double.NEGATIVE_INFINITY;
     	List<TreeNode> bestNodes = new ArrayList<>(); //si possono avere pareggi tra i nodi figli
     	for(TreeNode child: children) {
@@ -101,13 +107,43 @@ public abstract class MCTSBase {
     		return getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
     	}
     }
+
+
+	private TreeNode getChildWithMinUCT(List<TreeNode> children){
+		double minUCT = Double.POSITIVE_INFINITY;
+		List<TreeNode> bestNodes = new ArrayList<>(); //si possono avere pareggi tra i nodi figli
+		for(TreeNode child: children) {
+			double uctValue = UCB(child);
+			if(uctValue < minUCT) { //se un nodo è migliore, sostituiamo il max
+				minUCT = uctValue;
+				bestNodes.clear();
+				bestNodes.add(child);
+			}
+			else if(uctValue == minUCT) { //se c'è un pareggio, aggiungiamo il figlio alla lista
+				bestNodes.add(child);
+			}
+		}
+
+		if(bestNodes.isEmpty()) {
+			return null;
+		}
+		else {
+			return getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
+		}
+	}
     
     private double UCB(TreeNode node) {
         TreeNode parent = node.getParent();
 
-        // Se il nodo non è mai stato visitato, va esplorato subito
+		Double terminalValue = node.evaluateTerminalState();
+		if(terminalValue!=null){
+			//se è terminale, allora restituisci i valori terminal
+			return terminalValue;
+		}
+
+		// Se il nodo non è mai stato visitato, va esplorato subito
         if (node.getVisitCount() == 0) {
-            return Double.POSITIVE_INFINITY;
+            return Constants.UNVISITED_NODE;
         }
 
         // Se è la radice o il genitore ha problemi, usa solo il valore stimato
@@ -119,55 +155,12 @@ public abstract class MCTSBase {
         double parentVisits = Math.max(parent.getVisitCount(), 1e-6);
         double nodeVisits = Math.max(node.getVisitCount(), 1e-6);
 
-        return node.getAverageValue() + C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
+        return node.getAverageValue() + Constants.C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
     }
     
     protected TreeNode getRandomNode(List<TreeNode> nodes) {
     	return nodes.get(new Random().nextInt(nodes.size()));
-    	/*
-    	double totalWeight = 0.0;
 
-        Heuristics heuristic;
-        State state;
-        List<TreeNode> validNodes = new ArrayList<>();
-        List<Double> weights = new ArrayList<>();
-
-        for (TreeNode node : nodes) {
-            state = node.getState();
-            heuristic = state.getTurn().equalsTurn("Black")
-                ? new BlackHeuristics(state)
-                : new WhiteHeuristics(state);
-
-            double weight = heuristic.evaluateState();
-
-            // SCARTA mosse che portano a sconfitta sicura
-            if (weight < 0) {
-                weight=0;
-            }
-
-            validNodes.add(node);
-            weights.add(weight);
-            totalWeight += weight;
-        }
-
-        if (validNodes.isEmpty()) {
-            // Fallback: tutte le mosse portavano a disfatta → selezione casuale "rassegnata"
-            return nodes.get(new Random().nextInt(nodes.size()));
-        }
-
-        double r = new Random().nextDouble() * totalWeight;
-        double cumulative = 0.0;
-
-        for (int i = 0; i < validNodes.size(); i++) {
-            cumulative += weights.get(i);
-            if (r < cumulative) {
-                return validNodes.get(i);
-            }
-        }
-
-        // Fallback: mai raggiunto, ma serve
-        return validNodes.get(validNodes.size() - 1);
-        */
     }
     
     

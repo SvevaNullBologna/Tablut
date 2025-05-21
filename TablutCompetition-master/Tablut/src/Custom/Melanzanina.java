@@ -12,17 +12,20 @@ import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 
 public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
 
-	Game tablut;
-	TreeNode current;
-	TreeNode last;
-	MCTS mcts;
+	private final Game tablut;
+	private final State.Turn turn;
+	private final MCTS mcts;
+	private TreeNode current;
+	private TreeNode previous;
+
 	private final Random rand = new Random();
 
 	public Melanzanina(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
+		this.turn = Turn.valueOf(player.toUpperCase());
         this.tablut = new GameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");
-        this.mcts = new MCTS(timeout, 1, tablut);
-		// TODO Auto-generated constructor stub
+        this.mcts = new MCTS(timeout, 10, tablut);
+
 	}
 
 	// setName(String)
@@ -32,93 +35,76 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 	// read() = gets state from server
 
 	public static void main(String[] args) throws IOException {
-		String ip = "localhost";
-		int timeout = 60000;
-
 		if (args.length != 3) {
-			System.out.printf("Usage: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\\n\")");
+			System.out.println("Usage: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\\n\")");
 			System.exit(0);
 		}
 		try {
-			timeout = Integer.parseInt(args[1])*1000;
-			ip = args[2];
+			int timeout = Integer.parseInt(args[1])*1000;
+			String ip = args[2];
+			Melanzanina player = new Melanzanina(args[0], timeout, ip);
+			player.run();
+
 		} catch (NumberFormatException e) {
-			e.printStackTrace();
-			System.out.printf("ERROR: Timeout must be an integer representing seconds\n"
+			System.out.println("ERROR: Timeout must be an integer representing seconds\n"
 					+ "USAGE: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\n");
 			System.exit(1);
 		}
-		Melanzanina player = new Melanzanina(args[0], timeout, ip);
-		player.run();
+
 	}
 
 	@Override
 	public void run() {
-	    try {
-	        this.declareName();
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
-	    State state = new StateTablut();
-	    PrintStream originalOut = System.out;
-	    PrintStream nullStream = new PrintStream(new OutputStream() {
-	        @Override
-	        public void write(int b) {
-	            // Non fa nulla
-	        }
-	    });
-	    while (true) {
-	        try {
-	            this.read();
-	        } catch (ClassNotFoundException | IOException e) {
-	            e.printStackTrace();
-	            System.exit(2);
-	        }
+		try {
+			this.declareName();
+		} catch (Exception e) {
+			System.err.println("Failed to declare name to server.");
+		}
 
-	        state = this.getCurrentState();
-	        if (!state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE))
-	            break;
+		State state = new StateTablut();
+		PrintStream originalOut = System.out;
+		PrintStream nullStream = new PrintStream(new OutputStream() {
+			@Override
+			public void write(int b) {
+				// Suppress output
+			}
+		});
 
-	        if (this.getPlayer().equals(state.getTurn())) {
-	            last = current;
-	            current = new TreeNode(state, last, null);
-	            System.setOut(nullStream); // Java 11+
-	            Logger gameLogger = Logger.getLogger("GameLog");
-	            gameLogger.setUseParentHandlers(false);	            
-	            mcts.montecarlo(current);
-	            System.setOut(originalOut); // ripristina output
-	            TreeNode favorite = null;
-	            double max = Double.NEGATIVE_INFINITY;
-	            double maxAvg=0;
-	            for (TreeNode child : current.getChildren()) { //TODO volendo pesare con totalValue/visitCount
-	            	double avg = child.totalValue / (double) child.getVisitCount();
-	                if (avg > maxAvg) {
-	                    maxAvg = avg;
-	                    favorite = child;
-	                }
-	            	/*if (child.totalValue > max) {
-	                    max = child.totalValue;
-	                    favorite = child;*/
-	                else if (avg == max) {
-	                    if (favorite == null || rand.nextInt(2)>0) {
-	                        favorite = child;
-	                    }
-	                }
-	            }
+		while (true) {
+			try {
+				this.read();
+			} catch (ClassNotFoundException | IOException e) {
+				System.err.println("Error reading state from server.");
+				System.exit(2);
+			}
 
-	            if (favorite == null) {
-	                throw new IllegalStateException("Nessuna mossa valida trovata dopo MCTS.");
-	            }
+			state = this.getCurrentState();
+			if (!state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE)) {
+				break; //termina partita
+			}
+			if (state.getTurn().equals(this.turn)) {
+				this.previous = this.current;
+				this.current = new TreeNode(state, previous, null);
 
-	            System.out.println("Mossa scelta: " + favorite.getOriginAction());
+				Logger gameLogger = Logger.getLogger("GameLog");
+				gameLogger.setUseParentHandlers(false);
 
-	            try {
-	                this.write(favorite.getOriginAction());
-	            } catch (ClassNotFoundException | IOException e) {
-	                e.printStackTrace();
-	            }
-	        }
-	    }
+				try {
+					TreeNode bestNode = mcts.montecarlo(current, this.turn);
+					if (bestNode == null || bestNode.getOriginAction() == null) {
+						throw new IllegalStateException("MCTS returned no valid move.");
+					}
+					System.setOut(originalOut); // restore output
+					System.out.println("Mossa scelta: " + bestNode.getOriginAction());
+
+					this.write(bestNode.getOriginAction());
+				} catch (Exception e) {
+					System.setOut(originalOut); // restore output
+					System.out.println("ERRORE durante l'esecuzione di MCTS:");
+					e.printStackTrace();
+					return;
+				}
+			}
+		}
 	}
-
 }

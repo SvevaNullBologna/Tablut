@@ -1,0 +1,671 @@
+
+TREENODE: 
+B
+depth: 1
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 5
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 5
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 2
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 5
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 5
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 6
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 5
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 6
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 5
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 6
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 7
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+W
+depth: 3
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 4
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 5
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+B
+depth: 6
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+W
+depth: 7
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = Infinityhas back propagated
+TREENODE: 
+WW
+depth: 1
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+WW
+depth: 1
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+WW
+depth: 1
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+WW
+depth: 1
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated
+TREENODE: 
+WW
+depth: 1
+totalValue: 0.0
+visitCount: 0
+hasBeenExpanded: false
+is_root: false
+has_childrenfalse
+
+result = simulate (child) = -Infinityhas back propagated

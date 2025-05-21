@@ -1,7 +1,19 @@
 -Levare le print alla fine
 
+-non vede le mosse vincenti immediate, secondo chatgpt è perché :
+🔴 Perché succede:
+
+    La tua IA non sa che muovere il re in c1 equivale a vincere,
+
+    perché non lo prova abbastanza nelle simulazioni,
+
+    e non lo riconosce come speciale nella scelta finale.
+
+
+
 -PAREGGIO:
 Un AI può essere facilmente portata allo stallo se la situazione si sta mettendo male, dovremo prevedere:
 	1) Un modo per sfruttare questa cosa, magari usando il check della validità dello stato futuro per 
 		valutare lo stato presente, se siamo messi male si può provare lo stallo;
 	2) Un failsafe per impedire agli altri di fare la stessa cosa con la nostra
+	

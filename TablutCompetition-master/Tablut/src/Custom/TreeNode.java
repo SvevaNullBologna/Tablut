@@ -2,57 +2,54 @@ package Custom;
 
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
-import it.unibo.ai.didattica.competition.tablut.domain.Game;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TreeNode{
     private State state;
-    private State.Turn turn;
+    private final State.Turn turn;
     private TreeNode parent;
-    private List<TreeNode> children;
-    private Action action; //azione applicata per ottenere il nodo
-    private int depth;
+    private final List<TreeNode> children;
+    private final Action action; //azione applicata per ottenere il nodo
+    private final int depth;
     private int visitCount;
     public  Double totalValue;
     private boolean hasBeenExpanded;
-    
 
     public TreeNode(State state, TreeNode parent, Action action) {
     	this.state = state;
     	this.turn = state.getTurn();
-    	if(parent!=null) {
+        if(parent==null){
+            this.parent = parent;
+            this.depth = 0;
+            this.action = null;
+        }
+        else{
     		this.parent = parent;
     		this.depth = parent.depth + 1;
     		this.action = action;
-    		//
-    	}
-    	else {
-    		this.parent = parent;
-    		this.depth = 0;
-    		this.action = null;
     	}
     	
     	this.hasBeenExpanded = false;
     	this.visitCount = 0;
     	this.totalValue = 0.0;
-    	this.children = new ArrayList<TreeNode>();
+    	this.children = new ArrayList<>();
     }
    
-    /*private Double evaluateTerminalState() {
+    public Double evaluateTerminalState() {
         State.Turn result = this.state.getTurn();
 
         if (result == State.Turn.WHITEWIN) {
-            return this.turn == State.Turn.WHITE ? 1.0 : 0.0;
+            return this.turn == State.Turn.WHITE ? Constants.WIN : Constants.LOSE;
         } else if (result == State.Turn.BLACKWIN) {
-            return this.turn == State.Turn.BLACK ? 1.0 : 0.0;
+            return this.turn == State.Turn.BLACK ? Constants.WIN : Constants.LOSE;
         } else if (result == State.Turn.DRAW) {
-            return 0.5;
+            return Constants.DRAW;
         }
 
         return null;
-    }*/
+    }
     
     public State.Turn getTurn(){
     	return this.turn;
@@ -64,7 +61,6 @@ public class TreeNode{
     
     
     public void updateState(State state) {
-    	//checks to do about state before updating it
     	this.state = state;
     }
     
@@ -117,7 +113,7 @@ public class TreeNode{
     }
     
 
-    public void ExpandNode(List<MoveResult> legalMoves, Game rules) {
+    public void ExpandNode(List<MoveResult> legalMoves) {
     	if(this.isFullyExpanded()) return;
     	
     	for(MoveResult move : legalMoves) {
@@ -133,12 +129,38 @@ public class TreeNode{
     }
     
     public boolean isTerminal() {
-    	State.Turn turn = this.state.getTurn();
-        return turn.equals(State.Turn.WHITEWIN) ||
-               turn.equals(State.Turn.BLACKWIN) ||
-               turn.equals(State.Turn.DRAW);
+        return  state.getTurn() == State.Turn.WHITEWIN ||
+                state.getTurn() == State.Turn.BLACKWIN ||
+                state.getTurn() == State.Turn.DRAW;
+
     }
-    
-    
-    
+
+    public TreeNode getMostVisitedChild(){
+        if(this.children == null || this.children.isEmpty()){
+            return  null;
+        }
+        int maxVisits = -1;
+        TreeNode answer = null;
+        for(TreeNode child : this.children){
+            if(child.visitCount > maxVisits){
+                maxVisits = child.visitCount;
+                answer = child;
+            }
+        }
+        return answer;
+    }
+
+
+    @Override
+    public String toString() {
+        return "\n" +
+                "TREENODE: \n" +
+                this.turn + "\n" +
+                "depth: " + this.depth + "\n" +
+                "totalValue: " +  this.totalValue + "\n" +
+                "visitCount: " + this.visitCount + "\n" +
+                "hasBeenExpanded: " + this.hasBeenExpanded + "\n" +
+                "is_root: " + (this.parent == null ? true : false) + "\n" +
+                "has_children" + (this.children.isEmpty() ? false : true) + "\n\n";
+    }
 }
