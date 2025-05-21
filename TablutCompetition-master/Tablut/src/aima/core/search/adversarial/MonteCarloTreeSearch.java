@@ -94,19 +94,30 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		else
 			return randomlySelectUnvisitedChild(leaf);
 	}
-
+	
 	private boolean simulate(Node<S, A> node) {
+		int maxDepth = 10;
+	    int depth = 0;
 		if (game.isTerminal(node.getState()))
 			System.out.println("a");
-		while (!game.isTerminal(node.getState())) {
-			Random rand = new Random();
+	    while (!game.isTerminal(node.getState()) && depth < maxDepth) {
 			List<A> actions = game.getActions(SimulatedState.from(node));
-			A a = actions.get(rand.nextInt(actions.size()));
-			S result = game.getResult(SimulatedState.from(node), a);
+			S result = null;
+	        double bestValue = Double.NEGATIVE_INFINITY;
+	        for (A a : actions) {
+	            S next = game.getResult(node.getState(), a);
+	            double val = game.getUtility(next, game.getPlayer(node.getState())); // turno corrente
+	            if (val >= bestValue) {
+	                bestValue = val;
+	                result = next;
+	              }
+	        }
 			NodeFactory<S, A> nodeFactory = new NodeFactory<>();
 			node = nodeFactory.createNode(result);
+	        depth++;
 		}
-		return game.getUtility(node.getState(), game.getPlayer(tree.getRoot().getState())) > 0;
+		P p = game.getPlayer(tree.getRoot().getState());
+		return game.getUtility(node.getState(), p) > 0;
 	}
 
 	private void backpropagate(boolean result, Node<S, A> node) {
@@ -143,15 +154,18 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 	}
 
 	private Node<S, A> randomlySelectUnvisitedChild(Node<S, A> node) {
-		List<S> unvisitedChildren = new ArrayList<>();
+		S bestUnvisitedChildren = null;
 		List<S> visitedChildren = tree.getVisitedChildren(node);
+		double bestValue = Double.NEGATIVE_INFINITY;
 		for (A a : game.getActions(SimulatedState.from(node))) {
 			S result = game.getResult(SimulatedState.from(node), a);
-			if (!visitedChildren.contains(result))
-				unvisitedChildren.add(result);
+			double val = game.getUtility(result, game.getPlayer(node.getState())); // turno corrente
+            if (!visitedChildren.contains(result) && val >= bestValue) {
+                bestValue = val;
+                bestUnvisitedChildren = result;
+              }
 		}
-		Random rand = new Random();
-		return tree.addChild(node, unvisitedChildren.get(rand.nextInt(unvisitedChildren.size())));
+		return tree.addChild(node, bestUnvisitedChildren);
 	}
 
 	public A getWinnerChild(HashMap<A, S> actions, State.Turn aimed) {

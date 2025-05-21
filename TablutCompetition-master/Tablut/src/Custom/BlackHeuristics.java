@@ -94,6 +94,7 @@ public class BlackHeuristics extends Heuristics {
         double numberOfWhiteEaten = (double) (12 - numbOfWhite) / 12;//GameAshtonTablut.NUM_WHITE;
         double surroundKing = (double) checkAdjacentPawns(state, kingPos, State.Turn.BLACK.toString()) / getNumbToEatKing(state);
 
+        
         double whiteInDanger = getPawnsAggression();
         if (whiteInDanger > 0)
             stateValue += (whiteInDanger / numbOfWhite) * PAWNS_AGGRESSION_WEIGHT;

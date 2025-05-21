@@ -717,7 +717,8 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return repeated_moves_allowed;
 	}
 
-	Map<State, Map<Action, State>> results = new HashMap<>();
+	private Map<State, Map<Action, State>> results = new HashMap<>();
+	private Map<State, Double> utilities = new HashMap<>();
 
 	/**
 	 * Method that compute a list of all possible actions for the current player
@@ -730,6 +731,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public List<Action> getActions(State state) {
+		if(results.containsKey(state)) return results.get(state).keySet().stream().toList();
 		State.Turn turn = state.getTurn();
 		if (!results.containsKey(state))
 			results.put(state, new HashMap<>());
@@ -847,7 +849,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return state.getTurn().equals(State.Turn.WHITEWIN) || state.getTurn().equals(State.Turn.BLACKWIN)
 				|| state.getTurn().equals(State.Turn.DRAW);
 	}
-
+	
 	/**
 	 * Method to evaluate a state using heuristics
 	 *
@@ -858,17 +860,22 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public double getUtility(State state, State.Turn turn) {
-		// Terminal state
-		if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.BLACKWIN))
-				|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.WHITEWIN)))
-			return Double.POSITIVE_INFINITY; // Win
-		else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
-				|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
-			return Double.NEGATIVE_INFINITY; // Lose
-		System.out.println(state.getTurn() + " " + turn);
-		// Non-terminal state => get Heuristics for the current state
-		Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state) : new BlackHeuristics(state);
-		return heuristics.evaluateState();
+		if(!utilities.containsKey(state)) {
+			// Terminal state
+			if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.BLACKWIN))
+					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.WHITEWIN)))
+				return Double.POSITIVE_INFINITY; // Win
+			else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
+					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
+				return Double.NEGATIVE_INFINITY; // Lose
+			System.out.println(state.getTurn() + " " + turn);
+			// Non-terminal state => get Heuristics for the current state
+			Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state) : new BlackHeuristics(state);
+			utilities.put(state, heuristics.evaluateState());
+			if(utilities.get(state)==Double.NEGATIVE_INFINITY) 
+	        	System.out.println(utilities.get(state));
+		}
+		return utilities.get(state);
 	}
 
 	@Override
