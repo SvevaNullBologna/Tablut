@@ -1,24 +1,18 @@
 package Custom;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.UnknownHostException;
-import java.util.Random;
-import java.util.logging.Logger;
 
 import it.unibo.ai.didattica.competition.tablut.domain.*;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 
 public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
 
+	private boolean first_time = true;
 	private final Game tablut;
 	private final State.Turn turn;
 	private final MCTS mcts;
-	private TreeNode current;
-	private TreeNode previous;
-
-	private final Random rand = new Random();
+	private TreeNode tree;
 
 	public Melanzanina(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
@@ -27,12 +21,6 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
         this.mcts = new MCTS(timeout, 10, tablut);
 
 	}
-
-	// setName(String)
-	// String getName
-	// declareName() = write the name to the server
-	// write(Action) = write to the server an action
-	// read() = gets state from server
 
 	public static void main(String[] args) throws IOException {
 		if (args.length != 3) {
@@ -46,65 +34,71 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 			player.run();
 
 		} catch (NumberFormatException e) {
-			System.out.println("ERROR: Timeout must be an integer representing seconds\n"
-					+ "USAGE: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\n");
-			System.exit(1);
+			writeLogs.handleCriticalError("ERROR: Timeout must be an integer representing seconds\n"
+					+ "USAGE: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\n", e);
 		}
 
+	}
+
+	private void updateTreeFromServer(){
+		try {
+			this.read();
+			State current = this.getCurrentState();
+			if (!current.getTurn().equals(Turn.BLACK) && !current.getTurn().equals(Turn.WHITE)) {//se non è il turno di nessuno
+				return; //termina partita
+			}
+
+			if(this.tree == null){
+				this.tree = new TreeNode(current, null, null);
+				return;
+			}
+			else{
+				Action latestAction = mcts.getPreviousAction(this.tree.getState(), current);
+				this.tree = new TreeNode(current, this.tree, latestAction);
+			}
+		}
+		catch (IOException | ClassNotFoundException e){
+			writeLogs.handleCriticalError("Errore critico durante la lettura dal server: ", e );
+		}
+    }
+
+
+	private void send_result_to_server(TreeNode result){
+		try {
+			this.write(result.getOriginAction());
+		}
+		catch(IOException | ClassNotFoundException e){
+			writeLogs.handleCriticalError("Errore critico durante l'invio della mossa: ", e);
+		}
 	}
 
 	@Override
 	public void run() {
-		try {
-			this.declareName();
-		} catch (Exception e) {
-			System.err.println("Failed to declare name to server.");
+		if(first_time){
+			try {
+				this.declareName();
+			} catch(IOException | ClassNotFoundException e){
+				writeLogs.handleCriticalError("Errore critico durante la dichiarazione del nome: ", e);
+			}
+			first_time = false;
 		}
 
-		State state = new StateTablut();
-		PrintStream originalOut = System.out;
-		PrintStream nullStream = new PrintStream(new OutputStream() {
-			@Override
-			public void write(int b) {
-				// Suppress output
-			}
-		});
-
 		while (true) {
-			try {
-				this.read();
-			} catch (ClassNotFoundException | IOException e) {
-				System.err.println("Error reading state from server.");
-				System.exit(2);
-			}
-
-			state = this.getCurrentState();
-			if (!state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE)) {
-				break; //termina partita
-			}
-			if (state.getTurn().equals(this.turn)) {
-				this.previous = this.current;
-				this.current = new TreeNode(state, previous, null);
-
-				Logger gameLogger = Logger.getLogger("GameLog");
-				gameLogger.setUseParentHandlers(false);
-
+			updateTreeFromServer();
+			if (tree != null && tree.getState().getTurn().equals(this.turn)) {
 				try {
-					TreeNode bestNode = mcts.montecarlo(current, this.turn);
+					TreeNode bestNode = mcts.montecarlo(tree , this.turn);
+					writeLogs.write("BEST NODE: " + bestNode.toString());
 					if (bestNode == null || bestNode.getOriginAction() == null) {
 						throw new IllegalStateException("MCTS returned no valid move.");
 					}
-					System.setOut(originalOut); // restore output
-					System.out.println("Mossa scelta: " + bestNode.getOriginAction());
-
-					this.write(bestNode.getOriginAction());
-				} catch (Exception e) {
-					System.setOut(originalOut); // restore output
-					System.out.println("ERRORE durante l'esecuzione di MCTS:");
-					e.printStackTrace();
-					return;
+					send_result_to_server(bestNode);
+				}
+				catch (Exception e) {
+					writeLogs.handleCriticalError("Errore critico durante lo svolgimento della logica dell'algoritmo: ", e);
 				}
 			}
 		}
 	}
+
 }

@@ -1,8 +1,8 @@
 package Custom;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
@@ -17,65 +17,47 @@ public abstract class MCTSBase {
 	}
 
 
-	
-	protected List<MoveResult> getLegalActionsAndResultingStates(State state) {
-		List<MoveResult> results = new ArrayList<>();
-	    State.Pawn[][] board = state.getBoard();
-	    State.Turn turn = state.getTurn();
-	    int size = board.length;
+	public Action getPreviousAction(State previous, State current) {
+		String from = null;
+		String to = null;
 
-	    for (int fromRow = 0; fromRow < size; fromRow++) {
-	        for (int fromCol = 0; fromCol < size; fromCol++) {
-	            State.Pawn pawn = board[fromRow][fromCol];
-	            if (!isPlayersPawn(turn, pawn)) continue;
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				State.Pawn prevPawn = previous.getPawn(i, j);
+				State.Pawn currPawn = current.getPawn(i, j);
 
-	            addMovesInDirection(state, fromRow, fromCol, turn,  0,  1, results); // RIGHT
-	            addMovesInDirection(state, fromRow, fromCol, turn,  0, -1, results); // LEFT
-	            addMovesInDirection(state, fromRow, fromCol, turn,  1,  0, results); // DOWN
-	            addMovesInDirection(state, fromRow, fromCol, turn, -1,  0, results); // UP
-	        }
-	    }
+				if ((prevPawn == State.Pawn.WHITE || prevPawn == State.Pawn.BLACK || prevPawn == State.Pawn.KING)
+						&& currPawn == State.Pawn.EMPTY) {
+					from = previous.getBox(i, j);
+				} else if (prevPawn == State.Pawn.EMPTY &&
+						(currPawn == State.Pawn.WHITE || currPawn == State.Pawn.BLACK || currPawn == State.Pawn.KING)) {
+					to = current.getBox(i, j);
+				}
 
-	    return results;
-	}
-    
-	
-	private void addMovesInDirection(State state, int fromRow, int fromCol, State.Turn turn,
-            int rowStep, int colStep, List<MoveResult> results) {
-		int row = fromRow + rowStep;
-		int col = fromCol + colStep;
-		State.Pawn[][] board = state.getBoard();
-		int size = board.length;
-
-		while (row >= 0 && row < size && col >= 0 && col < size && board[row][col].equals(State.Pawn.EMPTY)) {
-			try {
-					String from = state.getBox(fromRow, fromCol);
-					String to = state.getBox(row, col);
-					Action action = new Action(from, to, turn);
-					State cloned = state.clone();
-					State next = rules.checkMove(cloned, action);
-					results.add(new MoveResult(action, next));
-			} catch (Exception ignored) {
-				//non credo si debba far altro 
+				if (from != null && to != null) {
+					try {
+						return new Action(from, to, previous.getTurn());
+					} catch (IOException e) {
+						return null;
+					}
+				}
 			}
-
-			row += rowStep;
-			col += colStep;
 		}
+
+		return null; // No move detected
 	}
 
-    protected boolean isPlayersPawn(State.Turn turn, State.Pawn pawn) {
-        if (turn.equals(State.Turn.WHITE)) {
-            return pawn.equals(State.Pawn.WHITE) || pawn.equals(State.Pawn.KING);
-        } else {
-            return pawn.equals(State.Pawn.BLACK);
-        }
-    }
-    
     ////////////////////////////////////////////////////
 
 
 	protected TreeNode getChildWithBestUCT(List<TreeNode> children, State.Turn turn){
+		// 1. Priorità ai nodi non visitati
+		for (TreeNode child : children) {
+			if (child.getVisitCount() == 0) {
+				return child;
+			}
+		}
+		// 2. Se tutti sono stati visitati, usa UCB
 		if(turn == State.Turn.BLACK) {
 			// Tocca a noi: massimizziamo
 			return getChildWithMaxUCT(children);
@@ -88,8 +70,8 @@ public abstract class MCTSBase {
     private TreeNode getChildWithMaxUCT(List<TreeNode> children) {
     	double maxUCT = Double.NEGATIVE_INFINITY;
     	List<TreeNode> bestNodes = new ArrayList<>(); //si possono avere pareggi tra i nodi figli
-    	for(TreeNode child: children) {
-    		double uctValue = UCB(child);
+		for(TreeNode child: children) {
+    		double uctValue = child.UCB();
     		if(uctValue > maxUCT) { //se un nodo è migliore, sostituiamo il max
     			maxUCT = uctValue;
     			bestNodes.clear();
@@ -104,7 +86,7 @@ public abstract class MCTSBase {
     		return null;
     	}
     	else {
-    		return getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
+    		return TreeNode.getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
     	}
     }
 
@@ -113,7 +95,7 @@ public abstract class MCTSBase {
 		double minUCT = Double.POSITIVE_INFINITY;
 		List<TreeNode> bestNodes = new ArrayList<>(); //si possono avere pareggi tra i nodi figli
 		for(TreeNode child: children) {
-			double uctValue = UCB(child);
+			double uctValue = child.UCB();
 			if(uctValue < minUCT) { //se un nodo è migliore, sostituiamo il max
 				minUCT = uctValue;
 				bestNodes.clear();
@@ -128,45 +110,16 @@ public abstract class MCTSBase {
 			return null;
 		}
 		else {
-			return getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
+			return TreeNode.getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
 		}
 	}
     
-    private double UCB(TreeNode node) {
-        TreeNode parent = node.getParent();
 
-		Double terminalValue = node.evaluateTerminalState();
-		if(terminalValue!=null){
-			//se è terminale, allora restituisci i valori terminal
-			return terminalValue;
-		}
-
-		// Se il nodo non è mai stato visitato, va esplorato subito
-        if (node.getVisitCount() == 0) {
-            return Constants.UNVISITED_NODE;
-        }
-
-        // Se è la radice o il genitore ha problemi, usa solo il valore stimato
-        if (parent == null || parent.getVisitCount() == 0) {
-            return node.totalValue;
-        }
-
-        // Aggiungiamo robustezza con valori minimi per evitare log(0) o div/0
-        double parentVisits = Math.max(parent.getVisitCount(), 1e-6);
-        double nodeVisits = Math.max(node.getVisitCount(), 1e-6);
-
-        return node.getAverageValue() + Constants.C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
-    }
     
-    protected TreeNode getRandomNode(List<TreeNode> nodes) {
-    	return nodes.get(new Random().nextInt(nodes.size()));
 
-    }
     
     
-    protected MoveResult getRandomMove(List<MoveResult> moves) {
-    	return moves.get(new Random().nextInt(moves.size()));
-    }
+
     
     ///////////////////////////////////////////////////////////// 
     

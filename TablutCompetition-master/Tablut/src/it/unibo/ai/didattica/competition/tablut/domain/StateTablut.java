@@ -28,8 +28,7 @@ public class StateTablut extends State implements Serializable {
 
 		this.turn = Turn.BLACK;
 
-		this.board[1][2] = Pawn.KING;
-
+		//this.board[1][6] = Pawn.KING;
 		this.board[2][4] = Pawn.WHITE;
 		this.board[3][4] = Pawn.WHITE;
 		this.board[5][4] = Pawn.WHITE;
@@ -38,7 +37,7 @@ public class StateTablut extends State implements Serializable {
 		this.board[4][3] = Pawn.WHITE;
 		this.board[4][5] = Pawn.WHITE;
 		this.board[4][6] = Pawn.WHITE;
-
+		this.board[4][4] = Pawn.KING;
 		this.board[0][3] = Pawn.BLACK;
 		this.board[0][4] = Pawn.BLACK;
 		this.board[0][5] = Pawn.BLACK;

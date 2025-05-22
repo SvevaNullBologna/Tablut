@@ -5,6 +5,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.Action;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class TreeNode{
     private State state;
@@ -14,8 +15,8 @@ public class TreeNode{
     private final Action action; //azione applicata per ottenere il nodo
     private final int depth;
     private int visitCount;
-    public  Double totalValue;
     private boolean hasBeenExpanded;
+    public  Double value;
 
     public TreeNode(State state, TreeNode parent, Action action) {
     	this.state = state;
@@ -30,68 +31,49 @@ public class TreeNode{
     		this.depth = parent.depth + 1;
     		this.action = action;
     	}
-    	
-    	this.hasBeenExpanded = false;
+
     	this.visitCount = 0;
-    	this.totalValue = 0.0;
+    	this.value = 0.0;
+        this.hasBeenExpanded = false;
     	this.children = new ArrayList<>();
     }
-   
-    public Double evaluateTerminalState() {
-        State.Turn result = this.state.getTurn();
 
-        if (result == State.Turn.WHITEWIN) {
-            return this.turn == State.Turn.WHITE ? Constants.WIN : Constants.LOSE;
-        } else if (result == State.Turn.BLACKWIN) {
-            return this.turn == State.Turn.BLACK ? Constants.WIN : Constants.LOSE;
-        } else if (result == State.Turn.DRAW) {
-            return Constants.DRAW;
-        }
 
-        return null;
+    public State getState() { //we can read it differently
+        return this.state;
     }
-    
     public State.Turn getTurn(){
     	return this.turn;
     }
-    
-    public State getState() { //we can read it differently
-    	return this.state;
-    }
-    
-    
-    public void updateState(State state) {
-    	this.state = state;
-    }
-    
+
     public TreeNode getParent(){
-    	return parent;
+        return parent;
     }
-    
+
     public List<TreeNode> getChildren(){
     	return this.children;
     }
-    
+
+    public Action getOriginAction() {
+        return action;
+    }
+
     public int getDepth() {
     	return depth;
     }
-    
-    public Action getOriginAction() {
-    	return action;
-    }
-   
+
     public int getVisitCount() {
     	return this.visitCount;
     }
     
-    public double getTotalValue() {
-    	return this.totalValue;
+    public double getValue() {
+    	return this.value;
     }
     
     public double getAverageValue()
     {
-    	if(this.visitCount == 0 ) return 0.0;
-    	return this.totalValue / this.visitCount;
+    	if(this.visitCount == 0 ) return 0.0; //MA significa che non è stato visitato e quindi va visitato!
+    	return this.value / this.visitCount;
     }
     
     public void addChild(TreeNode node) {
@@ -107,26 +89,38 @@ public class TreeNode{
     
     public void VisitNode(Double value) { 
     	if(value != null) {
-    		this.totalValue += value;
+    		this.value += value;
     	}
     	this.visitCount++;
+
+        writeLogs.write("visited node:\n" + this);
+        writeLogs.write("\nvalue = " + value + "\n");
+        writeLogs.write("\ntotal value = " + this.value + "\n");
     }
     
+    public boolean hasBeenExpanded(){
+        return this.hasBeenExpanded;
+    }
 
     public void ExpandNode(List<MoveResult> legalMoves) {
-    	if(this.isFullyExpanded()) return;
+    	if(this.hasBeenExpanded() || legalMoves == null || legalMoves.isEmpty()){
+            return;
+        }
     	
     	for(MoveResult move : legalMoves) {
-    		TreeNode child = new TreeNode(move.resultingState, this, move.action);
-    		this.addChild(child);
+    		TreeNode child = new TreeNode(move.resultingState, this, move.action); //dove salviamo il value? Nel padre o nel figlio?
+            double value = child.evaluateTerminalState();
+            this.addChild(child);
+            if(!Double.isNaN(value)){
+                child.VisitNode(value);
+            }
+
     	}
+        this.hasBeenExpanded = true;
     	
-    	this.hasBeenExpanded = true;
+
     }
 
-    public boolean isFullyExpanded() {
-    	return hasBeenExpanded;
-    }
     
     public boolean isTerminal() {
         return  state.getTurn() == State.Turn.WHITEWIN ||
@@ -150,6 +144,51 @@ public class TreeNode{
         return answer;
     }
 
+    public Double evaluateTerminalState() {
+        State.Turn result = this.state.getTurn();
+
+        if (result == State.Turn.WHITEWIN) {
+            return this.turn == State.Turn.WHITE ? Constants.WIN : Constants.LOSE;
+        } else if (result == State.Turn.BLACKWIN) {
+            return this.turn == State.Turn.BLACK ? Constants.WIN : Constants.LOSE;
+        } else if (result == State.Turn.DRAW) {
+            return Constants.DRAW;
+        }
+        else{
+            return  Constants.NOT_A_TERMINAL_STATE;
+        }
+    }
+
+    public double UCB() {
+        TreeNode parent = this.getParent();
+
+        Double terminalValue = this.evaluateTerminalState();
+        if(terminalValue!=null && !terminalValue.isNaN()){
+            //se è terminale, allora restituisci i valori terminal
+            return terminalValue;
+        }
+
+        // Se il nodo non è mai stato visitato, va esplorato subito
+        if (this.getVisitCount() == 0) {
+            return Constants.UNVISITED_NODE;
+        }
+
+        // Se è la radice o il genitore ha problemi, usa solo il valore stimato
+        if (parent == null || parent.getVisitCount() == 0) {
+            return this.getValue();
+        }
+
+        // Aggiungiamo robustezza con valori minimi per evitare log(0) o div/0
+        double parentVisits = Math.max(parent.getVisitCount(), 1e-6);
+        double nodeVisits = Math.max(this.getVisitCount(), 1e-6);
+
+        return this.getAverageValue() + Constants.C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
+    }
+
+    public static TreeNode getRandomNode(List<TreeNode> nodes) {
+        return nodes.get(new Random().nextInt(nodes.size()));
+
+    }
 
     @Override
     public String toString() {
@@ -157,7 +196,7 @@ public class TreeNode{
                 "TREENODE: \n" +
                 this.turn + "\n" +
                 "depth: " + this.depth + "\n" +
-                "totalValue: " +  this.totalValue + "\n" +
+                "totalValue: " +  this.value + "\n" +
                 "visitCount: " + this.visitCount + "\n" +
                 "hasBeenExpanded: " + this.hasBeenExpanded + "\n" +
                 "is_root: " + (this.parent == null ? true : false) + "\n" +
