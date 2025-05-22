@@ -46,15 +46,18 @@ public class MinimaxSearch<S, A, P> implements AdversarialSearch<S, A> {
 	private Game<S, A, P> game;
 	private Metrics metrics = new Metrics();
 
+	private long maxEndTime;
+
 	/**
 	 * Creates a new search object for a given game.
 	 */
-	public static <S, A, P> MinimaxSearch<S, A, P> createFor(Game<S, A, P> game) {
-		return new MinimaxSearch<>(game);
+	public static <S, A, P> MinimaxSearch<S, A, P> createFor(Game<S, A, P> game, int maxEndTime) {
+		return new MinimaxSearch<>(game, maxEndTime);
 	}
 
-	public MinimaxSearch(Game<S, A, P> game) {
+	public MinimaxSearch(Game<S, A, P> game, long l) {
 		this.game = game;
+		this.maxEndTime = l;
 	}
 
 	@Override
@@ -85,7 +88,7 @@ public class MinimaxSearch<S, A, P> implements AdversarialSearch<S, A> {
 
 	public double maxValue(S state, P player) { // returns an utility value
 		metrics.incrementInt(METRICS_NODES_EXPANDED);
-		if (game.isTerminal(state))
+		if (game.isTerminal(state) || System.currentTimeMillis()>maxEndTime)
 			return game.getUtility(state, player);
 		return game.getActions(state).stream()
 				.mapToDouble(action -> minValue(game.getResult(state, action), player))
@@ -94,7 +97,7 @@ public class MinimaxSearch<S, A, P> implements AdversarialSearch<S, A> {
 
 	public double minValue(S state, P player) { // returns an utility value
 		metrics.incrementInt(METRICS_NODES_EXPANDED);
-		if (game.isTerminal(state))
+		if (game.isTerminal(state) || System.currentTimeMillis()>maxEndTime)
 			return game.getUtility(state, player);
 		return game.getActions(state).stream()
 				.mapToDouble(action -> maxValue(game.getResult(state, action), player))

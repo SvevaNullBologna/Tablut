@@ -12,17 +12,17 @@ import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 import aima.core.search.adversarial.*;
 import aima.core.search.adversarial.Game;
 
-public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
+public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
 
 	AIMAGameAshtonTablut tablut;
 	TreeNode current;
 	TreeNode last;
-	MonteCarloTreeSearch<State,Action,State.Turn> mcts;
+	IterativeDeepeningAlphaBetaSearch<State,Action,State.Turn> mcts;
 
-	public MelanzaninaAIMA(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
+	public MelanzaninaMinMax(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
         this.tablut = new AIMAGameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");;
-        this.mcts = new MonteCarloTreeSearch<State, Action, Turn>(tablut,0,timeout);
+        this.mcts = new IterativeDeepeningAlphaBetaSearch<State, Action, Turn>(tablut, 0, 1, timeout-1);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -34,14 +34,14 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 
 	public static void main(String[] args) throws IOException {
 		String ip = "localhost";
-		int timeout = 60000;
+		int timeout = 60;
 
 		if (args.length != 3) {
 			System.out.printf("Usage: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\\n\")");
 			System.exit(0);
 		}
 		try {
-			timeout = Integer.parseInt(args[1])*1000;
+			timeout = Integer.parseInt(args[1]);
 			ip = args[2];
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
@@ -49,7 +49,7 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 					+ "USAGE: ./runmyplayer <black|white> <timeout-in-seconds> <server-ip>\n");
 			System.exit(1);
 		}
-		MelanzaninaAIMA player = new MelanzaninaAIMA(args[0], timeout, ip);
+		MelanzaninaMinMax player = new MelanzaninaMinMax(args[0], timeout, ip);
 		player.run();
 	}
 

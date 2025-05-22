@@ -63,11 +63,6 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 
 	@Override
 	public A makeDecision(S state) {
-		depth = 0;
-		S oldState = state;
-		CanonicalState transofrmed = CanonicalState.from(((State) state));
-		state = (S)transofrmed;				
-		// tree <-- NODE(state)
 		tree.addRoot(state);
 		// while TIME-REMAINING() do
 		long startTime = System.currentTimeMillis();
@@ -97,8 +92,9 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		}
         System.out.println("depth:"+depth);
 		// return the move in ACTIONS(state) whose node has highest number of playouts
-		return (A) transofrmed.getInverse().applyToAction((Action)bestAction(tree.getRoot()));
+		return bestAction(tree.getRoot());
 	}
+
 
 	private Node<S, A> select(GameTree<S, A> gameTree) {
 		Node<S, A> node = gameTree.getRoot();
