@@ -278,12 +278,12 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		int trovati = 0;
 		for (State s : drawConditions) {
 
-			System.out.println(s.toString());
+			
 
 			if (s.equals(state)) {
 				// DEBUG: //
-				// System.out.println("UGUALI:");
-				// System.out.println("STATO VECCHIO:\t" + s.toLinearString());
+				// 
+				// 
 				// System.out.println("STATO NUOVO:\t" +
 				// state.toLinearString());
 
@@ -295,8 +295,8 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 				}
 			} else {
 				// DEBUG: //
-				// System.out.println("DIVERSI:");
-				// System.out.println("STATO VECCHIO:\t" + s.toLinearString());
+				// 
+				// 
 				// System.out.println("STATO NUOVO:\t" +
 				// state.toLinearString());
 			}
@@ -305,7 +305,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 			this.loggGame.fine("Equal states found: " + trovati);
 		}
 		this.loggGame.fine("Stato:\n" + state.toString());
-		System.out.println("Stato:\n" + state.toString());
+		
 
 		return state;
 	}
@@ -489,7 +489,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// ho il re sotto
 		if (a.getRowTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo() + 1, a.getColumnTo()).equalsPawn("K")) {
-			// System.out.println("Ho il re sotto");
+			// 
 			// re sul trono
 			if (state.getBox(a.getRowTo() + 1, a.getColumnTo()).equals("e5")) {
 				if (state.getPawn(5, 4).equalsPawn("B") && state.getPawn(4, 5).equalsPawn("B")
@@ -884,12 +884,10 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 			else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
 					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
 				return Double.NEGATIVE_INFINITY; // Lose
-			System.out.println(state.getTurn() + " " + turn);
+			
 			// Non-terminal state => get Heuristics for the current state
 			Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state) : new BlackHeuristics(state);
-			utilities.put(state, heuristics.getAverage()-heuristics.evaluateState());
-			if(utilities.get(state)==Double.NEGATIVE_INFINITY) 
-	        	System.out.println(utilities.get(state));
+			utilities.put(state, heuristics.getAverage()-heuristics.evaluateState());	        	
 		}
 		double ret = utilities.get(state);
 		return ret;

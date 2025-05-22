@@ -117,53 +117,26 @@ public class CanonicalBoard {
 		this.canonical = canonical;
 	}
 
-	private static Map<CanonicalBoard, List<Integer>> generateSymmetries(Pawn[][] board) {
-		Map<CanonicalBoard, List<Integer>> ret = new HashMap<>();
+	public static CanonicalBoard from(Pawn[][] original) {
+		return findCanonical(original);
+	}
+
+	private static CanonicalBoard findCanonical(Pawn[][] board) {
+	    String bestKey = null;
+	    CanonicalBoard best = null;
 		Symmetry[] values = Symmetry.values();
 		for (int h = 0; h < values.length; h++) {
 			Pawn[][] newBoard = values[h].applyToBoard(board);
-			if (ret.keySet().stream().anyMatch(b -> Arrays.equals(b.getCanonical(), newBoard)))
-				continue;
-			List<Integer> value = new ArrayList<>();
-			for (int i = 0; i < 9; i++)
-				for (int j = 0; j < 9; j++)
-					if (newBoard[i][j] != Pawn.EMPTY)
-						value.add(i * 10 + j);
-			value.sort(Comparator.naturalOrder());
-			ret.put(new CanonicalBoard(values[h], values[h].getInverse(), newBoard), value);
-		}
-		return ret;
-	}
-
-	public static CanonicalBoard from(Pawn[][] original) {
-		Map<CanonicalBoard, List<Integer>> forms = generateSymmetries(original);
-		return findCanonical(forms, 0);
-	}
-
-	private static CanonicalBoard findCanonical(Map<CanonicalBoard, List<Integer>> forms, int index) {
-		int bestValue = Integer.MAX_VALUE;
-		CanonicalBoard bestKey = null;
-		Map<CanonicalBoard, List<Integer>> best = new HashMap<>();
-		for (Entry<CanonicalBoard, List<Integer>> entry : forms.entrySet())
-			if (index < entry.getValue().size())
-				if (entry.getValue().get(index) < bestValue) {
-					best.clear();
-					best.put(entry.getKey(), entry.getValue());
-					bestValue = entry.getValue().get(index);
-					bestKey = entry.getKey();
-				} else if (entry.getValue().get(index) == bestValue)
-					best.put(entry.getKey(), entry.getValue());
-		if (bestKey == null)
-			return null;
-		if (best.size() > 1) {
-			index++;
-			if (forms.get(bestKey).size() == index)
-				return bestKey;
-			else
-				return findCanonical(best, index);
-
-		} else
-			return bestKey;
+			StringBuilder sb = new StringBuilder();
+		    for (Pawn[] row : newBoard)
+		        for (Pawn cell : row)
+		            sb.append(cell.ordinal());
+		    String key = sb.toString();
+	        if (bestKey == null || key.compareTo(bestKey) < 0) {
+	            bestKey = key;
+	            best = new CanonicalBoard(values[h], values[h].getInverse(), newBoard);
+	        }		}
+		return best;
 	}
 
 	public Symmetry getApplied() {
