@@ -185,10 +185,25 @@ public class TreeNode{
         return this.getAverageValue() + Constants.C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
     }
 
+    public void cutParent(){
+        this.parent = null;
+    }
+
+    public TreeNode findChildWithState(State targetState) {
+        for (TreeNode child : this.children) {
+            if (child.getState().equals(targetState)) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+
     public static TreeNode getRandomNode(List<TreeNode> nodes) {
         return nodes.get(new Random().nextInt(nodes.size()));
 
     }
+
 
     @Override
     public String toString() {

@@ -52,6 +52,11 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 				this.tree = new TreeNode(current, null, null);
 				return;
 			}
+			TreeNode matchingChild = this.tree.findChildWithState(current);
+			if(matchingChild!=null){
+				matchingChild.cutParent();
+				this.tree =  matchingChild;
+			}
 			else{
 				Action latestAction = mcts.getPreviousAction(this.tree.getState(), current);
 				this.tree = new TreeNode(current, this.tree, latestAction);
