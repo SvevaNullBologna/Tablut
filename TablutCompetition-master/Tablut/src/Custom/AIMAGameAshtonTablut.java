@@ -275,7 +275,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		}
 
 		// controllo pareggio
-		int trovati = 0;
+		/*int trovati = 0;
 		for (State s : drawConditions) {
 
 			
@@ -303,7 +303,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		}
 		if (trovati > 0) {
 			this.loggGame.fine("Equal states found: " + trovati);
-		}
+		}*/
 		this.loggGame.fine("Stato:\n" + state.toString());
 		
 
@@ -735,21 +735,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public List<Action> getActions(State state) {
-		
-		Pawn[][] board=state.getBoard();
-		int boardSize=board.length;
-		CanonicalBoard canonicalBoard = CanonicalBoard.from(board);		
-		State canonical = state.clone();
-		canonical.setBoard(canonicalBoard.getCanonical());
-		
 		State.Turn turn = state.getTurn();
-		canonical.setTurn(turn);
-		if(!results.containsKey(canonical)) {
-			results.put(canonical, new HashMap<>());
+		if(!results.containsKey(state)) {
+			results.put(state, new HashMap<>());
 			// Loop through rows
-			for (int i = 0; i < boardSize; i++) {
+			for (int i = 0; i < 9; i++) {
 				// Loop through columns
-				for (int j = 0; j < boardSize; j++) {
+				for (int j = 0; j < 9; j++) {
 					State.Pawn p = state.getPawn(i, j);
 	
 					// If pawn color is equal of turn color
@@ -764,24 +756,24 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 								to = state.getBox(k, j);
 								action = new Action(from, to, turn);
 								try {
-									State result = checkMove(state.clone(), action);
-									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
+									State result = CanonicalState.from(checkMove(state.clone(), action));
+									results.get(state).put(action, result);
 								} catch (Exception e) {
 									break;
 								}									
 							}
 							// Search on bottom of pawn
-							for (int k = i + 1; k < boardSize; k++) {
+							for (int k = i + 1; k < 9; k++) {
 	
 								from = state.getBox(i, j);
 								to = state.getBox(k, j);
 								action = new Action(from, to, turn);
 								try {
-									State result = checkMove(state.clone(), action);
-									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
+									State result = CanonicalState.from(checkMove(state.clone(), action));
+									results.get(state).put(action, result);
 								} catch (Exception e) {
 									break;
-								}
+								}		
 							}
 	
 							// Search on left of pawn
@@ -790,24 +782,23 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 								to = state.getBox(i, k);
 								action = new Action(from, to, turn);
 								try {
-									State result = checkMove(state.clone(), action);
-									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
+									State result = CanonicalState.from(checkMove(state.clone(), action));
+									results.get(state).put(action, result);
 								} catch (Exception e) {
 									break;
-								}
+								}		
 							}
 							// Search on right of pawn
-							for (int k = j + 1; k < boardSize; k++) {
-	
+							for (int k = j + 1; k < 9; k++) {
 								from = state.getBox(i, j);
 								to = state.getBox(i, k);
 								action = new Action(from, to, turn);
 								try {
-									State result = checkMove(state.clone(), action);
-									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
+									State result = CanonicalState.from(checkMove(state.clone(), action));
+									results.get(state).put(action, result);
 								} catch (Exception e) {
 									break;
-								}
+								}		
 							}
 						} catch (Exception e) {
 							e.printStackTrace();
@@ -817,7 +808,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 				}
 			}
 		}
-		return results.get(canonical).keySet().stream().map(act->canonicalBoard.getInverse().applyToAction(act)).toList();
+		return results.get(state).keySet().stream().toList();
 		//actions = results.get(canonical).keySet().stream().toList();
 	}
 
@@ -832,24 +823,17 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public State getResult(State state, Action action) {
-		Pawn[][] board=state.getBoard();
-		Action oldAction = action;
-		CanonicalBoard canonicalBoard = CanonicalBoard.from(board);		
-		State canonical = state.clone();
-		canonical.setBoard(canonicalBoard.getCanonical());
-		action = canonicalBoard.getApplied().applyToAction(action);
-		if (!results.containsKey(canonical))
-			results.put(canonical, new HashMap<>());
-		if (!results.get(canonical).containsKey(action))
+		if (!results.containsKey(state))
+			results.put(state, new HashMap<>());
+		if (!results.get(state).containsKey(action))
 			try {
-				results.get(canonical).put(action, checkMove(canonical.clone(), action));
+				State result = CanonicalState.from(checkMove(state.clone(), action));
+				results.get(state).put(action, result);
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(3);
 			}
-		canonical =  results.get(canonical).get(action).clone();
-		canonical.setBoard(canonicalBoard.getInverse().applyToBoard(canonical.getBoard()));
-		return canonical;
+		return results.get(state).get(action);
 	}
 
 	/**

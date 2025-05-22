@@ -1,9 +1,14 @@
 package aima.core.search.framework;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+
+import it.unibo.ai.didattica.competition.tablut.domain.State;
 
 /**
  *	Basic implementation of Game Tree for the Monte Carlo Tree Search
@@ -19,7 +24,7 @@ public class GameTree<S, A> {
 	HashMap<S, Double> Wi, Ni;
 	NodeFactory<S, A> nodeFactory;
 	Node<S, A> root;
-	
+	Set<S> drawConditions = new HashSet<>();
 	
 	public GameTree() {
 		this.gameTree = new HashMap<>();
@@ -29,11 +34,19 @@ public class GameTree<S, A> {
 	}
 	
 	public void addRoot(S root) {
+	    if(this.root!=null) this.drawConditions.add(this.root.getState());
 		Node<S, A> rootNode = nodeFactory.createNode(root);
-		this.root = rootNode;
-		gameTree.put(rootNode, new ArrayList<>());
-		Wi.put(root, 0.0);
-		Ni.put(root, 0.0);
+	    this.root = rootNode;
+
+	    // Recupera eventuali dati esistenti
+	    List<Node<S, A>> children = gameTree.getOrDefault(rootNode, new ArrayList<>());
+	    double w = Wi.getOrDefault(root, 0.0);
+	    double n = Ni.getOrDefault(root, 0.0);
+
+	    // Aggiorna la struttura
+	    gameTree.put(rootNode, children);
+	    Wi.put(root, w);
+	    Ni.put(root, n);
 	}
 	
 	public Node<S, A> getRoot() {
@@ -120,5 +133,9 @@ public class GameTree<S, A> {
 		}
 		Random rand = new Random();
 		return best_children.get(rand.nextInt(best_children.size()));
+	}
+
+	public Set<S> getDrawConditions() {
+		return this.drawConditions;
 	}
 }

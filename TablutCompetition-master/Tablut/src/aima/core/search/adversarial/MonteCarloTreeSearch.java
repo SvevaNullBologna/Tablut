@@ -8,6 +8,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.*;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -15,6 +16,7 @@ import java.util.Random;
 import javax.swing.RowFilter.Entry;
 
 import Custom.AIMAGameAshtonTablut;
+import Custom.CanonicalState;
 import Custom.SimulatedState;
 
 /**
@@ -62,6 +64,9 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 	@Override
 	public A makeDecision(S state) {
 		depth = 0;
+		S oldState = state;
+		CanonicalState transofrmed = CanonicalState.from(((State) state));
+		state = (S)transofrmed;				
 		// tree <-- NODE(state)
 		tree.addRoot(state);
 		// while TIME-REMAINING() do
@@ -92,7 +97,7 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		}
         System.out.println("depth:"+depth);
 		// return the move in ACTIONS(state) whose node has highest number of playouts
-		return bestAction(tree.getRoot());
+		return (A) transofrmed.getInverse().applyToAction((Action)bestAction(tree.getRoot()));
 	}
 
 	private Node<S, A> select(GameTree<S, A> gameTree) {
@@ -117,7 +122,6 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		if (game.isTerminal(node.getState()))
 			System.out.println("a");
 	    while (!game.isTerminal(node.getState()) && (System.currentTimeMillis() - startTime) < (max_time-1000)) {
-			((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(node));
 	    	Random rand = new Random();
 			A a = game.getActions(node.getState()).get(rand.nextInt(game.getActions(node.getState()).size()));
 			S result = game.getResult(node.getState(), a);
@@ -134,27 +138,18 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		if (tree.getParent(node) != null)
 			backpropagate(result, tree.getParent(node));
 	}
-
+	
 	private A bestAction(Node<S, A> root) {
-		HashMap<A, S> actions = new HashMap<>();
-		((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(root));
-		game.getActions(root.getState()).stream().forEach((A a) -> actions.put(a, game.getResult(root.getState(), a)));
-		A winnerChild = getWinnerChild(actions,
-				((State) root.getState()).getTurn().equals(State.Turn.BLACK) ? State.Turn.BLACKWIN : State.Turn.WHITEWIN);
-		if (winnerChild != null) {
-			return winnerChild;
-		}
 		Node<S, A> bestChild = tree.getChildWithMaxPlayouts(root);
-		for (java.util.Map.Entry<A, S> entry : actions.entrySet()) {
-			if (entry.getValue().equals(bestChild.getState()))
-				return entry.getKey();
+		for (A a : game.getActions(root.getState())) {
+			S result = game.getResult(root.getState(), a);
+			if (result.equals(bestChild.getState())) return a;
 		}
 		return null;
 	}
 
 	private boolean isNodeFullyExpanded(Node<S, A> node) {
 		List<S> visitedChildren = tree.getVisitedChildren(node);
-		((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(node));
 		for (A a : game.getActions(node.getState())) {
 			S result = game.getResult(node.getState(), a);
 			if (!visitedChildren.contains(result)) {
@@ -164,7 +159,7 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		return true;
 	}
 
-	public static <S, A> List<State> findDrawConditions(Node<S, A> node) {
+	public <S, A> List<State> findDrawConditions(Node<S, A> node) {
 		State present = (State) node.getState();
 		List<State> ret = new ArrayList<>();
 		if (!node.isRootNode()) {
@@ -178,13 +173,13 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 					ret.addAll(findDrawConditions(node.getParent()));
 			}				
 		}
+		else ret.addAll((Collection<? extends State>) tree.getDrawConditions());
 		return ret;
 	}
 	
 	private Node<S, A> randomlySelectUnvisitedChild(Node<S, A> node) {
 		List<S> unvisitedChildren = new ArrayList<>();
 		List<S> visitedChildren = tree.getVisitedChildren(node);
-		((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(node));
 		for (A a : game.getActions(node.getState())) {
 			S result = game.getResult(node.getState(), a);
 			if (!visitedChildren.contains(result)) unvisitedChildren.add(result);

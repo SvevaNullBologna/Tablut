@@ -8,9 +8,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
+import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
+import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
 
-public class CanonicalBoard {
+public class CanonicalState extends StateTablut {
 
 	public enum Symmetry {
 		IDENTITY((Integer i, Integer j) -> copy(i, j)), ROTATE_90((Integer i, Integer j) -> rotate90(i, j)),
@@ -108,22 +110,22 @@ public class CanonicalBoard {
 
 	private Symmetry applied;
 	private Symmetry inverse;
-	private Pawn[][] canonical;
 
-	private CanonicalBoard(Symmetry applied, Symmetry inverse, Pawn[][] canonical) {
+	private CanonicalState(Symmetry applied, Symmetry inverse, Pawn[][] board, State.Turn turn) {
 		super();
 		this.applied = applied;
 		this.inverse = inverse;
-		this.canonical = canonical;
+		this.setBoard(board);
+		this.setTurn(turn);	
 	}
 
-	public static CanonicalBoard from(Pawn[][] original) {
-		return findCanonical(original);
+	public static CanonicalState from(State original) {
+		return findCanonical(original.getBoard(), original.getTurn());
 	}
 
-	private static CanonicalBoard findCanonical(Pawn[][] board) {
+	private static CanonicalState findCanonical(Pawn[][] board, State.Turn turn) {
 	    String bestKey = null;
-	    CanonicalBoard best = null;
+	    CanonicalState best = null;
 		Symmetry[] values = Symmetry.values();
 		for (int h = 0; h < values.length; h++) {
 			Pawn[][] newBoard = values[h].applyToBoard(board);
@@ -134,7 +136,7 @@ public class CanonicalBoard {
 		    String key = sb.toString();
 	        if (bestKey == null || key.compareTo(bestKey) < 0) {
 	            bestKey = key;
-	            best = new CanonicalBoard(values[h], values[h].getInverse(), newBoard);
+	            best = new CanonicalState(values[h], values[h].getInverse(), newBoard, turn);
 	        }		}
 		return best;
 	}
@@ -146,30 +148,4 @@ public class CanonicalBoard {
 	public Symmetry getInverse() {
 		return inverse;
 	}
-
-	public Pawn[][] getCanonical() {
-		return canonical;
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + Arrays.deepHashCode(canonical);
-		result = prime * result + Objects.hash(applied, inverse);
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		CanonicalBoard other = (CanonicalBoard) obj;
-		return applied == other.applied && Arrays.deepEquals(canonical, other.canonical) && inverse == other.inverse;
-	}
-
 }
