@@ -73,6 +73,7 @@ public class BlackHeuristics extends Heuristics {
         lateGameWeights[BLACK_ALIVE] = 30.0;
         lateGameWeights[BLACK_SUR_K] = 25.0;
         lateGameWeights[BLOCKED_ESC] = 5.0;
+        this.average = 60;
     }
 
     /**

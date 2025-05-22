@@ -5,6 +5,7 @@ import aima.core.search.framework.Metrics;
 import aima.core.search.framework.Node;
 import aima.core.search.framework.NodeFactory;
 import it.unibo.ai.didattica.competition.tablut.domain.*;
+import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Random;
 
 import javax.swing.RowFilter.Entry;
 
+import Custom.AIMAGameAshtonTablut;
 import Custom.SimulatedState;
 
 /**
@@ -54,7 +56,7 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		this.game = game;
 		this.iterations = iterations;
 		tree = new GameTree<>();
-		this.max_time = max_time;
+		this.max_time = max_time-1000;
 	}
 
 	@Override
@@ -63,14 +65,14 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		tree.addRoot(state);
 		// while TIME-REMAINING() do
 		long startTime = System.currentTimeMillis();
-		while (System.currentTimeMillis() - startTime < (max_time - 1500)) {
+		while (System.currentTimeMillis() - startTime < (max_time)) {
 			// leaf <-- SELECT(tree)
 			Node<S, A> leaf = select(tree);
 			// child <-- EXPAND(leaf)
 			Node<S, A> child = expand(leaf);
 			// result <-- SIMULATE(child)
 			// result = true if player of root node wins
-			boolean result = simulate(child);
+			double result = simulate(child, startTime);
 			// BACKPROPAGATE(result, child)
 			backpropagate(result, child);
 			// repeat the four steps for set number of iterations
@@ -95,13 +97,13 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 			return randomlySelectUnvisitedChild(leaf);
 	}
 	
-	private boolean simulate(Node<S, A> node) {
-		int maxDepth = 10;
-	    int depth = 0;
+	private double simulate(Node<S, A> node, long startTime) {
 		if (game.isTerminal(node.getState()))
 			System.out.println("a");
-	    while (!game.isTerminal(node.getState()) && depth < maxDepth) {
-			List<A> actions = game.getActions(SimulatedState.from(node));
+		int depth = 0;
+	    while (!game.isTerminal(node.getState()) && depth<10 && System.currentTimeMillis() - startTime < (max_time)) {
+			((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(node));
+			List<A> actions = game.getActions(node.getState());
 			S result = null;
 	        double bestValue = Double.NEGATIVE_INFINITY;
 	        for (A a : actions) {
@@ -112,15 +114,17 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 	                result = next;
 	              }
 	        }
+            depth++;
 			NodeFactory<S, A> nodeFactory = new NodeFactory<>();
 			node = nodeFactory.createNode(result);
-	        depth++;
+			depth++;
 		}
 		P p = game.getPlayer(tree.getRoot().getState());
-		return game.getUtility(node.getState(), p) > 0;
+		return game.getUtility(node.getState(), p);
+		//return game.getUtility(node.getState(), p) > 0;
 	}
 
-	private void backpropagate(boolean result, Node<S, A> node) {
+	private void backpropagate(double result, Node<S, A> node) {
 		tree.updateStats(result, node);
 		if (tree.getParent(node) != null)
 			backpropagate(result, tree.getParent(node));
@@ -128,7 +132,8 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 
 	private A bestAction(Node<S, A> root) {
 		HashMap<A, S> actions = new HashMap<>();
-		game.getActions(SimulatedState.from(root)).stream().forEach((A a) -> actions.put(a, game.getResult(SimulatedState.from(root), a)));
+		((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(root));
+		game.getActions(root.getState()).stream().forEach((A a) -> actions.put(a, game.getResult(root.getState(), a)));
 		A winnerChild = getWinnerChild(actions,
 				((State) root.getState()).getTurn().equals(State.Turn.BLACK) ? State.Turn.BLACKWIN : State.Turn.WHITEWIN);
 		if (winnerChild != null) {
@@ -144,8 +149,9 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 
 	private boolean isNodeFullyExpanded(Node<S, A> node) {
 		List<S> visitedChildren = tree.getVisitedChildren(node);
-		for (A a : game.getActions(SimulatedState.from(node))) {
-			S result = game.getResult(SimulatedState.from(node), a);
+		((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(node));
+		for (A a : game.getActions(node.getState())) {
+			S result = game.getResult(node.getState(), a);
 			if (!visitedChildren.contains(result)) {
 				return false;
 			}
@@ -153,12 +159,29 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		return true;
 	}
 
+	public static <S, A> List<State> findDrawConditions(Node<S, A> node) {
+		State present = (State) node.getState();
+		List<State> ret = new ArrayList<>();
+		if (!node.isRootNode()) {
+			State parent = (State) node.getParent().getState();
+			if(present.getNumberOf(Pawn.BLACK) == parent.getNumberOf(Pawn.BLACK)
+					&& present.getNumberOf(Pawn.WHITE) == parent.getNumberOf(Pawn.WHITE)) {
+				ret.add(parent);
+				if (parent instanceof SimulatedState)
+					ret.addAll(((SimulatedState) parent).getDrawConditions());
+				else
+					ret.addAll(findDrawConditions(node.getParent()));
+			}				
+		}
+		return ret;
+	}
 	private Node<S, A> randomlySelectUnvisitedChild(Node<S, A> node) {
 		S bestUnvisitedChildren = null;
 		List<S> visitedChildren = tree.getVisitedChildren(node);
 		double bestValue = Double.NEGATIVE_INFINITY;
-		for (A a : game.getActions(SimulatedState.from(node))) {
-			S result = game.getResult(SimulatedState.from(node), a);
+		((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(node));
+		for (A a : game.getActions(node.getState())) {
+			S result = game.getResult(node.getState(), a);
 			double val = game.getUtility(result, game.getPlayer(node.getState())); // turno corrente
             if (!visitedChildren.contains(result) && val >= bestValue) {
                 bestValue = val;

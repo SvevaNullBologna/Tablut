@@ -1,6 +1,7 @@
 package Custom;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.logging.SimpleFormatter;
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
+import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
 import it.unibo.ai.didattica.competition.tablut.exceptions.*;
@@ -264,7 +266,6 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		}
 
 		// se sono arrivato qui, muovo la pedina
-		List<State> drawConditions = ((SimulatedState) state).getDrawConditions();
 		state = this.movePawn(state, a);
 		// a questo punto controllo lo stato per eventuali catture
 		if (state.getTurn().equalsTurn("W")) {
@@ -718,7 +719,10 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	}
 
 	private Map<State, Map<Action, State>> results = new HashMap<>();
+	
 	private Map<State, Double> utilities = new HashMap<>();
+
+	private List<State> drawConditions;
 
 	/**
 	 * Method that compute a list of all possible actions for the current player
@@ -731,86 +735,90 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public List<Action> getActions(State state) {
-		if(results.containsKey(state)) return results.get(state).keySet().stream().toList();
+		
+		Pawn[][] board=state.getBoard();
+		int boardSize=board.length;
+		CanonicalBoard canonicalBoard = CanonicalBoard.from(board);		
+		State canonical = state.clone();
+		canonical.setBoard(canonicalBoard.getCanonical());
+		
 		State.Turn turn = state.getTurn();
-		if (!results.containsKey(state))
-			results.put(state, new HashMap<>());
-		SimulatedState converted = (SimulatedState) state;
-		// Loop through rows
-		for (int i = 0; i < state.getBoard().length; i++) {
-			// Loop through columns
-			for (int j = 0; j < state.getBoard().length; j++) {
-				State.Pawn p = state.getPawn(i, j);
-
-				// If pawn color is equal of turn color
-				if (p.toString().equals(turn.toString())
-						|| (p.equals(State.Pawn.KING) && turn.equals(State.Turn.WHITE))) {
-					// Search on top of pawn
-					String from, to;
-					Action action;
-					try {
-						for (int k = i - 1; k >= 0; k--) {
-							from = state.getBox(i, j);
-							to = state.getBox(k, j);
-							action = new Action(from, to, turn);
-							if (!results.get(state).containsKey(action))
+		canonical.setTurn(turn);
+		if(!results.containsKey(canonical)) {
+			results.put(canonical, new HashMap<>());
+			// Loop through rows
+			for (int i = 0; i < boardSize; i++) {
+				// Loop through columns
+				for (int j = 0; j < boardSize; j++) {
+					State.Pawn p = state.getPawn(i, j);
+	
+					// If pawn color is equal of turn color
+					if (p.toString().equals(turn.toString())
+							|| (p.equals(State.Pawn.KING) && turn.equals(State.Turn.WHITE))) {
+						// Search on top of pawn
+						String from, to;
+						Action action;
+						try {
+							for (int k = i - 1; k >= 0; k--) {
+								from = state.getBox(i, j);
+								to = state.getBox(k, j);
+								action = new Action(from, to, turn);
 								try {
-									State result = checkMove(converted.clone(), action);
-									results.get(state).put(action, result);
+									State result = checkMove(state.clone(), action);
+									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
+								} catch (Exception e) {
+									break;
+								}									
+							}
+							// Search on bottom of pawn
+							for (int k = i + 1; k < boardSize; k++) {
+	
+								from = state.getBox(i, j);
+								to = state.getBox(k, j);
+								action = new Action(from, to, turn);
+								try {
+									State result = checkMove(state.clone(), action);
+									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
 								} catch (Exception e) {
 									break;
 								}
-						}
-						// Search on bottom of pawn
-						for (int k = i + 1; k < state.getBoard().length; k++) {
-
-							from = state.getBox(i, j);
-							to = state.getBox(k, j);
-							action = new Action(from, to, turn);
-							if (!results.get(state).containsKey(action))
+							}
+	
+							// Search on left of pawn
+							for (int k = j - 1; k >= 0; k--) {
+								from = state.getBox(i, j);
+								to = state.getBox(i, k);
+								action = new Action(from, to, turn);
 								try {
-									State result = checkMove(converted.clone(), action);
-									results.get(state).put(action, result);
+									State result = checkMove(state.clone(), action);
+									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
 								} catch (Exception e) {
 									break;
 								}
-						}
-
-						// Search on left of pawn
-						for (int k = j - 1; k >= 0; k--) {
-							from = state.getBox(i, j);
-							to = state.getBox(i, k);
-							action = new Action(from, to, turn);
-							if (!results.get(state).containsKey(action))
+							}
+							// Search on right of pawn
+							for (int k = j + 1; k < boardSize; k++) {
+	
+								from = state.getBox(i, j);
+								to = state.getBox(i, k);
+								action = new Action(from, to, turn);
 								try {
-									State result = checkMove(converted.clone(), action);
-									results.get(state).put(action, result);
+									State result = checkMove(state.clone(), action);
+									results.get(canonical).put(canonicalBoard.getApplied().applyToAction(action), result);
 								} catch (Exception e) {
 									break;
 								}
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+							System.exit(2);
 						}
-						// Search on right of pawn
-						for (int k = j + 1; k < state.getBoard().length; k++) {
-
-							from = state.getBox(i, j);
-							to = state.getBox(i, k);
-							action = new Action(from, to, turn);
-							if (!results.get(state).containsKey(action))
-								try {
-									State result = checkMove(converted.clone(), action);
-									results.get(state).put(action, result);
-								} catch (Exception e) {
-									break;
-								}
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-						System.exit(2);
 					}
 				}
 			}
 		}
-		return results.get(state).keySet().stream().toList();
+		return results.get(canonical).keySet().stream().map(act->canonicalBoard.getInverse().applyToAction(act)).toList();
+		//actions = results.get(canonical).keySet().stream().toList();
 	}
 
 	/**
@@ -824,16 +832,24 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public State getResult(State state, Action action) {
-		if (!results.containsKey(state))
-			results.put(state, new HashMap<>());
-		if (!results.get(state).containsKey(action))
+		Pawn[][] board=state.getBoard();
+		Action oldAction = action;
+		CanonicalBoard canonicalBoard = CanonicalBoard.from(board);		
+		State canonical = state.clone();
+		canonical.setBoard(canonicalBoard.getCanonical());
+		action = canonicalBoard.getApplied().applyToAction(action);
+		if (!results.containsKey(canonical))
+			results.put(canonical, new HashMap<>());
+		if (!results.get(canonical).containsKey(action))
 			try {
-				results.get(state).put(action, checkMove(((SimulatedState) state).clone(), action));
+				results.get(canonical).put(action, checkMove(canonical.clone(), action));
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(3);
 			}
-		return results.get(state).get(action);
+		canonical =  results.get(canonical).get(action).clone();
+		canonical.setBoard(canonicalBoard.getInverse().applyToBoard(canonical.getBoard()));
+		return canonical;
 	}
 
 	/**
@@ -871,11 +887,12 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 			System.out.println(state.getTurn() + " " + turn);
 			// Non-terminal state => get Heuristics for the current state
 			Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state) : new BlackHeuristics(state);
-			utilities.put(state, heuristics.evaluateState());
+			utilities.put(state, heuristics.getAverage()-heuristics.evaluateState());
 			if(utilities.get(state)==Double.NEGATIVE_INFINITY) 
 	        	System.out.println(utilities.get(state));
 		}
-		return utilities.get(state);
+		double ret = utilities.get(state);
+		return ret;
 	}
 
 	@Override
@@ -896,5 +913,9 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	@Override
 	public void endGame(State state) {
 		this.loggGame.fine("Stato:\n" + state.toString());
+	}
+
+	public void setDrawConditions(List<State> drawConditions) {
+		this.drawConditions = drawConditions;
 	}
 }

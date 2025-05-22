@@ -40,6 +40,7 @@ public class WhiteHeuristics extends Heuristics{
         gameWeights[BLACK_EATEN] = 18.0;
         gameWeights[KING_MOVEMENT] = 5.0;
         gameWeights[SAFE_PAWNS] = 42.0;
+        average=67;
     }
 
     /**

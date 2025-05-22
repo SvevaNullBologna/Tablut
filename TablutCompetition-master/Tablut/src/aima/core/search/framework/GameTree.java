@@ -80,9 +80,11 @@ public class GameTree<S, A> {
 		else return new ArrayList<>();
 	}
 	
-	public void updateStats(boolean result, Node<S, A> node) {
+	public void updateStats(double result, Node<S, A> node) {
 		Ni.put(node.getState(), Ni.get(node.getState()) + 1);
-		if (result) Wi.put(node.getState(), Wi.get(node.getState()) + 1);
+		//if (result) Wi.put(node.getState(), Wi.get(node.getState()) + 1);
+		if (result>0) Wi.put(node.getState(), Wi.get(node.getState()) + 1);
+
 	}
 	
 	public Node<S, A> getChildWithMaxUCT(Node<S, A> node) {

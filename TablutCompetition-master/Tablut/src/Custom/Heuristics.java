@@ -10,6 +10,7 @@ import java.util.List;
 public abstract class Heuristics {
 
     protected State state;
+    protected int average;
 
     // Matrix of camps
     private final int[][] camps = {
@@ -539,6 +540,8 @@ public abstract class Heuristics {
         return false;
     }
 
-
+	public int getAverage() {
+		return average;
+	}
 }
 
