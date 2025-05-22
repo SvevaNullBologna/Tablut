@@ -60,15 +60,7 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	    }
-	    Random rand = new Random();
 	    State state = new StateTablut();
-	    PrintStream originalOut = System.out;
-	    PrintStream nullStream = new PrintStream(new OutputStream() {
-	        @Override
-	        public void write(int b) {
-	            // Non fa nulla
-	        }
-	    });
 	    while (true) {
 	        try {
 	            this.read();
@@ -78,16 +70,14 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 	        }
 
 	        state = this.getCurrentState();
+	        System.out.println("1:"+System.currentTimeMillis());
 	        if (!state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE))
 	            break;
 
 	        if (this.getPlayer().equals(state.getTurn())) {
-
-	            System.setOut(nullStream); // Java 11+
 	            Logger gameLogger = Logger.getLogger("GameLog");
 	            gameLogger.setUseParentHandlers(false);	            
 	        	Action best=mcts.makeDecision(state);
-	            System.setOut(originalOut); // ripristina output
 	            try {
 	                this.write(best);
 	            } catch (ClassNotFoundException | IOException e) {
