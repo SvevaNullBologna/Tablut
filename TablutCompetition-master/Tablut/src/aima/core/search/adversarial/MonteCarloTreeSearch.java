@@ -114,8 +114,7 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 
 	
 	private double simulate(Node<S, A> node, long startTime) {
-		if (game.isTerminal(node.getState()))
-			System.out.println("a");
+		P player = game.getPlayer(node.getState());
 	    while (!game.isTerminal(node.getState()) && (System.currentTimeMillis() - startTime) < (max_time-1000)) {
 			((AIMAGameAshtonTablut)game).setDrawConditions(findDrawConditions(node));
 	    	Random rand = new Random();
@@ -126,7 +125,17 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		}
 		P p = game.getPlayer(tree.getRoot().getState());
 		depth++;
-		return game.getUtility(node.getState(), game.getPlayer(tree.getRoot().getState()));
+		if (!game.isTerminal(node.getState())) 
+			return 0.0;
+		State.Turn outcome = ((State)node.getState()).getTurn();
+		if (outcome == State.Turn.DRAW) {
+			return 0.0;
+		} else if ((outcome == State.Turn.WHITEWIN && p.equals(State.Turn.WHITE)) ||
+				(outcome == State.Turn.BLACKWIN && p.equals(State.Turn.BLACK))) {
+			return 1.0;
+		} else {
+			return -1.0;
+		}
 	}
 
 	private void backpropagate(double result, Node<S, A> node) {
