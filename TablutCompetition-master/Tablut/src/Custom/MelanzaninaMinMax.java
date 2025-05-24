@@ -94,12 +94,11 @@ public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.
 	        	mcts1.setLogEnabled(false);
 
 	        	Action best=mcts.makeDecision(transformed);
-	        	Action best1 = mcts1.makeDecision(transformed);
+	        	//Action best1 = mcts1.makeDecision(transformed);
 	    		long time = System.currentTimeMillis();
-	        	System.out.println(System.currentTimeMillis()-time);
 	        	System.out.println(transformed.getApplied());
 	        	System.out.println(best);
-	        	best = transformed.getInverse().reverseAction((Action)best);
+	        	best = transformed.getApplied().reverseAction((Action)best);
 	        	System.out.println(best);
 	            try {
 	                this.write(best);

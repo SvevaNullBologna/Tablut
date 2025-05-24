@@ -113,6 +113,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 				}
 			}
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
+		System.out.println(state.toString()+ results.get(0));
 		return results.get(0);
 	}
 
