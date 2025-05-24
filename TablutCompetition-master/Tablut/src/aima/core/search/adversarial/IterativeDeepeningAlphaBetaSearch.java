@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import aima.core.search.framework.Metrics;
+import it.unibo.ai.didattica.competition.tablut.domain.State;
 
 /**
  * Implements an iterative deepening Minimax search with alpha-beta pruning and
@@ -82,6 +83,8 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 		metrics = new Metrics();
 		StringBuffer logText = null;
 		P player = game.getPlayer(state);
+		if(((State)state).getBoard()[2][2].toString().equals("K"))
+			System.out.print("");
 		List<A> results = orderActions(state, game.getActions(state), player, 0);
 		timer.start();
 		currDepthLimit = 0;
@@ -113,7 +116,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 				}
 			}
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
-		System.out.println(state.toString()+ results.get(0));
+		System.out.println(state.toString()+ results.get(0));			
 		return results.get(0);
 	}
 

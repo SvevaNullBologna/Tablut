@@ -874,6 +874,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 					}
 				}
 			}
+			possibleActions.stream().forEach(p->results.get(state).put(p, null));
 			return possibleActions;
 		}
 		return results.get(state).keySet().stream().toList();
@@ -894,7 +895,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	public State getResult(State state, Action action) {
 		if (!results.containsKey(state))
 			results.put(state, new HashMap<>());
-		if (!results.get(state).containsKey(action))
+		if (!results.get(state).containsKey(action) || results.get(state).get(action)==null)
 			try {
 				State result = movePawn(state.clone(), action);
 				// State result = CanonicalState.from(checkMove(state.clone(), action));
