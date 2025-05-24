@@ -58,7 +58,7 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		this.game = game;
 		this.iterations = iterations;
 		tree = new GameTree<>();
-		this.max_time = max_time-1000;
+		this.max_time = max_time - 1000;
 	}
 
 	@Override
@@ -66,35 +66,35 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		tree.addRoot(state);
 		// while TIME-REMAINING() do
 		long startTime = System.currentTimeMillis();
-        long time = System.currentTimeMillis();
+		long time = System.currentTimeMillis();
 		while (time - startTime < (max_time)) {
-	        System.out.println("2:"+System.currentTimeMillis());
+			System.out.println("2:" + System.currentTimeMillis());
 			time = System.currentTimeMillis();
 			// leaf <-- SELECT(tree)
 			Node<S, A> leaf = select(tree);
 			// child <-- EXPAND(leaf)
 
-	        System.out.println("sel:"+(System.currentTimeMillis()-time));
-			time = System.currentTimeMillis();			
+			System.out.println("sel:" + (System.currentTimeMillis() - time));
+			time = System.currentTimeMillis();
 			Node<S, A> child = expand(leaf);
 
-	        System.out.println("exp:"+(System.currentTimeMillis()-time));
-			time = System.currentTimeMillis();			// result <-- SIMULATE(child)
+			System.out.println("exp:" + (System.currentTimeMillis() - time));
+			time = System.currentTimeMillis(); // result <-- SIMULATE(child)
 			// result = true if player of root node wins
 			double result = simulate(child, startTime);
+			// double result = simulate(child, startTime);
 
-	        System.out.println("sim:"+(System.currentTimeMillis()-time));
-			time = System.currentTimeMillis();			// BACKPROPAGATE(result, child)
+			System.out.println("sim:" + (System.currentTimeMillis() - time));
+			time = System.currentTimeMillis(); // BACKPROPAGATE(result, child)
 			backpropagate(result, child);
 
-	        System.out.println("bac:"+(System.currentTimeMillis()-time));
-			time = System.currentTimeMillis();			// repeat the four steps for set number of iterations
+			System.out.println("bac:" + (System.currentTimeMillis() - time));
+			time = System.currentTimeMillis(); // repeat the four steps for set number of iterations
 		}
-        System.out.println("depth:"+depth);
+		System.out.println("depth:" + depth);
 		// return the move in ACTIONS(state) whose node has highest number of playouts
 		return bestAction(tree.getRoot());
 	}
-
 
 	private Node<S, A> select(GameTree<S, A> gameTree) {
 		Node<S, A> node = gameTree.getRoot();
@@ -110,32 +110,92 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		else
 			return randomlySelectUnvisitedChild(leaf);
 	}
-	
+
 	int depth;
 
-	
 	private double simulate(Node<S, A> node, long startTime) {
-		P player = game.getPlayer(node.getState());
-	    while (!game.isTerminal(node.getState()) && (System.currentTimeMillis() - startTime) < (max_time-1000)) {
-	    	Random rand = new Random();
-			A a = game.getActions(node.getState()).get(rand.nextInt(game.getActions(node.getState()).size()));
-			S result = game.getResult(node.getState(), a);
+		P p = game.getPlayer(node.getState());
+		while (!game.isTerminal(node.getState()) && (System.currentTimeMillis() - startTime) < (max_time - 1000)) {
+			List<S> results = new ArrayList<>();
+			List<S> optimistics = new ArrayList<>();
+			double best = Double.NEGATIVE_INFINITY;
+			for (A action : game.getActions(node.getState())) {
+				S result = game.getResult(node.getState(), action);
+				double utility = game.getUtility(result, game.getPlayer(node.getState()));
+				if (utility > best) {
+					optimistics.clear();
+					best = utility;
+				}
+				if (utility == best) {
+					optimistics.add(result);
+				}
+				results.add(result);
+			}
+			Random rand = new Random();
+			S result = rand.nextInt(10) > 7 ? results.get(rand.nextInt(results.size()))
+					: optimistics.get(rand.nextInt(optimistics.size()));
 			NodeFactory<S, A> nodeFactory = new NodeFactory<>();
 			node = nodeFactory.createNode(result);
+			depth++;
 		}
-		P p = game.getPlayer(tree.getRoot().getState());
-		depth++;
-		if (!game.isTerminal(node.getState())) 
+		if (!game.isTerminal(node.getState()))
 			return 0.0;
-		State.Turn outcome = ((State)node.getState()).getTurn();
+		State.Turn outcome = ((State) node.getState()).getTurn();
 		if (outcome == State.Turn.DRAW) {
 			return 0.0;
-		} else if ((outcome == State.Turn.WHITEWIN && p.equals(State.Turn.WHITE)) ||
-				(outcome == State.Turn.BLACKWIN && p.equals(State.Turn.BLACK))) {
+		} else if ((outcome == State.Turn.WHITEWIN && p.equals(State.Turn.WHITE))
+				|| (outcome == State.Turn.BLACKWIN && p.equals(State.Turn.BLACK))) {
 			return 1.0;
 		} else {
 			return -1.0;
 		}
+	}
+
+	private Metrics metrics = new Metrics();
+	public final static String METRICS_NODES_EXPANDED = "nodesExpanded";
+	private long maxEndTime;
+
+	private double simulateMinMax(Node<S, A> node, long startTime) {
+		this.maxEndTime = (startTime + this.max_time) - 1000;
+		metrics = new Metrics();
+		double resultValue = Double.NEGATIVE_INFINITY;
+		S state = node.getState();
+		P player = game.getPlayer(state);
+		for (A action : game.getActions(state)) {
+			double value = minValue(game.getResult(state, action), player, resultValue, Double.POSITIVE_INFINITY);
+			if (value > resultValue) {
+				resultValue += value;
+			}
+		}
+		return resultValue;
+	}
+
+	public double maxValue(S state, P player, double alpha, double beta) {
+		metrics.incrementInt(METRICS_NODES_EXPANDED);
+		if (game.isTerminal(state))
+			return game.getUtility(state, player);
+		double value = Double.NEGATIVE_INFINITY;
+		for (A action : game.getActions(state)) {
+			value = Math.max(value, minValue(game.getResult(state, action), player, alpha, beta));
+			if (value >= beta)
+				return value;
+			alpha = Math.max(alpha, value);
+		}
+		return value;
+	}
+
+	public double minValue(S state, P player, double alpha, double beta) {
+		metrics.incrementInt(METRICS_NODES_EXPANDED);
+		if (game.isTerminal(state))
+			return game.getUtility(state, player);
+		double value = Double.POSITIVE_INFINITY;
+		for (A action : game.getActions(state)) {
+			value = Math.min(value, maxValue(game.getResult(state, action), player, alpha, beta));
+			if (value <= alpha)
+				return value;
+			beta = Math.min(beta, value);
+		}
+		return value;
 	}
 
 	private void backpropagate(double result, Node<S, A> node) {
@@ -143,12 +203,13 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		if (tree.getParent(node) != null)
 			backpropagate(result, tree.getParent(node));
 	}
-	
+
 	private A bestAction(Node<S, A> root) {
 		Node<S, A> bestChild = tree.getChildWithMaxPlayouts(root);
 		for (A a : game.getActions(root.getState())) {
 			S result = game.getResult(root.getState(), a);
-			if (result.equals(bestChild.getState())) return a;
+			if (result.equals(bestChild.getState()))
+				return a;
 		}
 		return null;
 	}
@@ -169,25 +230,26 @@ public class MonteCarloTreeSearch<S, A, P> implements AdversarialSearch<S, A> {
 		List<State> ret = new ArrayList<>();
 		if (!node.isRootNode()) {
 			State parent = (State) node.getParent().getState();
-			if(present.getNumberOf(Pawn.BLACK) == parent.getNumberOf(Pawn.BLACK)
+			if (present.getNumberOf(Pawn.BLACK) == parent.getNumberOf(Pawn.BLACK)
 					&& present.getNumberOf(Pawn.WHITE) == parent.getNumberOf(Pawn.WHITE)) {
 				ret.add(parent);
 				if (parent instanceof SimulatedState)
 					ret.addAll(((SimulatedState) parent).getDrawConditions());
 				else
 					ret.addAll(findDrawConditions(node.getParent()));
-			}				
-		}
-		else ret.addAll((Collection<? extends State>) tree.getDrawConditions());
+			}
+		} else
+			ret.addAll((Collection<? extends State>) tree.getDrawConditions());
 		return ret;
 	}
-	
+
 	private Node<S, A> randomlySelectUnvisitedChild(Node<S, A> node) {
 		List<S> unvisitedChildren = new ArrayList<>();
 		List<S> visitedChildren = tree.getVisitedChildren(node);
 		for (A a : game.getActions(node.getState())) {
 			S result = game.getResult(node.getState(), a);
-			if (!visitedChildren.contains(result)) unvisitedChildren.add(result);
+			if (!visitedChildren.contains(result))
+				unvisitedChildren.add(result);
 		}
 		Random rand = new Random();
 		return tree.addChild(node, unvisitedChildren.get(rand.nextInt(unvisitedChildren.size())));

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -61,6 +63,7 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 	        e.printStackTrace();
 	    }
 	    State state = new StateTablut();
+	    List<State> drawConditions = new ArrayList<>();
 	    while (true) {
 	        try {
 	            this.read();
@@ -73,7 +76,6 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 	        System.out.println("1:"+System.currentTimeMillis());
 	        if (!state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE))
 	            break;
-
 	        if (this.getPlayer().equals(state.getTurn())) {
 	            Logger gameLogger = Logger.getLogger("GameLog");
 	            gameLogger.setUseParentHandlers(false);	  
@@ -82,7 +84,8 @@ public class MelanzaninaAIMA extends it.unibo.ai.didattica.competition.tablut.cl
 	    		// tree <-- NODE(state)
 	    		
 	        	Action best=mcts.makeDecision(transformed);
-	        	best = transformed.getInverse().applyToAction((Action)best);
+	        	best = transformed.getApplied().reverseAction((Action)best);
+		        drawConditions.add(state);
 	            try {
 	                this.write(best);
 	            } catch (ClassNotFoundException | IOException e) {

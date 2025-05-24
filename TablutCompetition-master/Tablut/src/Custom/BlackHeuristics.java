@@ -73,7 +73,6 @@ public class BlackHeuristics extends Heuristics {
         lateGameWeights[BLACK_ALIVE] = 30.0;
         lateGameWeights[BLACK_SUR_K] = 25.0;
         lateGameWeights[BLOCKED_ESC] = 5.0;
-        this.average = 60;
     }
 
     /**
@@ -91,11 +90,10 @@ public class BlackHeuristics extends Heuristics {
             lateGame = true;
 
         // Values for the weighted sum
-        double numberOfBlackAlive = (double) state.getNumberOf(State.Pawn.BLACK) / 16;// GameAshtonTablut.NUM_BLACK;
-        double numberOfWhiteEaten = (double) (12 - numbOfWhite) / 12;//GameAshtonTablut.NUM_WHITE;
+        double numberOfBlackAlive = (double) state.getNumberOf(State.Pawn.BLACK) / 16;
+        double numberOfWhiteEaten = (double) (12 - numbOfWhite) / 12;
         double surroundKing = (double) checkAdjacentPawns(state, kingPos, State.Turn.BLACK.toString()) / getNumbToEatKing(state);
 
-        
         double whiteInDanger = getPawnsAggression();
         if (whiteInDanger > 0)
             stateValue += (whiteInDanger / numbOfWhite) * PAWNS_AGGRESSION_WEIGHT;

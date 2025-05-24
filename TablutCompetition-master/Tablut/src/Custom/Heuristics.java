@@ -10,7 +10,6 @@ import java.util.List;
 public abstract class Heuristics {
 
     protected State state;
-    protected int average;
 
     // Matrix of camps
     private final int[][] camps = {
@@ -46,6 +45,7 @@ public abstract class Heuristics {
                 if (state.getPawn(i, j).equalsPawn("K")) {
                     pos[0] = i;
                     pos[1] = j;
+
                     return pos;
                 }
             }
@@ -88,8 +88,6 @@ public abstract class Heuristics {
 
         int[] space = new int[]{pos[0]-1,pos[1]};
         // vertical checks
-        if(space[0]<0||space[1]<0)
-        	System.out.println("wtf");
         if (isPositionOccupied(state, space) || Arrays.stream(camps).anyMatch(camp -> Arrays.equals(camp, space)))
             count--;
         space[0] = pos[0] + 1;
@@ -515,6 +513,7 @@ public abstract class Heuristics {
         // left side present
         targetPos[0] = position[0];
         targetPos[1] = position[1] - 1;
+
         if (Arrays.stream(camps).anyMatch(camp -> Arrays.equals(camp, targetPos)) ||
                 (isPositionOccupied(state, targetPos) && state.getPawn(targetPos[0], targetPos[1]).equalsPawn(enemy.toString()))) {
             checkPos[0] = position[0];
@@ -540,8 +539,6 @@ public abstract class Heuristics {
         return false;
     }
 
-	public int getAverage() {
-		return average;
-	}
+
 }
 

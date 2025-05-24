@@ -40,7 +40,6 @@ public class WhiteHeuristics extends Heuristics{
         gameWeights[BLACK_EATEN] = 18.0;
         gameWeights[KING_MOVEMENT] = 5.0;
         gameWeights[SAFE_PAWNS] = 42.0;
-        average=67;
     }
 
     /**
@@ -51,34 +50,28 @@ public class WhiteHeuristics extends Heuristics{
         double stateValue = 0.0;
 
         int[] kingPos = kingPosition(state);
-        
-        // Re ha vinto (posizione in alto/sinistra) → valore massimo
-        if (kingPos[0] == 0 || kingPos[1] == 0) {
-            System.out.println(state.getTurn());
-            return 1.0;  // massimo normalizzato
-        }
 
-        // Re catturabile → minimo valore
-        if (canBeCaptured(state, kingPos, State.Pawn.KING)) {
-            return 0.0;  // minimo normalizzato
-        }
+        // If king can be captured PRUNE THOSE MFS
+        if (canBeCaptured(state, kingPos, State.Pawn.KING))
+            return Double.NEGATIVE_INFINITY;
 
         int numbOfBlack = state.getNumberOf(State.Pawn.BLACK);
         int numbOfWhite = state.getNumberOf(State.Pawn.WHITE);
-
-        double numberOfWhiteAlive = (double) numbOfWhite / 12;
-        double numberOfBlackEaten = (double) (16 - numbOfBlack) / 16;
+        // Values for the weighted sum
+        double numberOfWhiteAlive = (double)  numbOfWhite / 12;
+        double numberOfBlackEaten = (double)  (16 - numbOfBlack) / 16;
 
         double kingMovEval = evalKingMovement(kingPos);
         double evalKingEsc = evalKingEscapes(kingPos);
         double safePawns = getPawnsSafety();
-
         if (safePawns > 0)
             stateValue += (safePawns / numbOfWhite) * gameWeights[SAFE_PAWNS];
 
         stateValue += numberOfWhiteAlive * gameWeights[WHITE_ALIVE];
         stateValue += numberOfBlackEaten * gameWeights[BLACK_EATEN];
+
         stateValue += kingMovEval * gameWeights[KING_MOVEMENT];
+
         stateValue += evalKingEsc;
 
         if (print) {
@@ -86,15 +79,11 @@ public class WhiteHeuristics extends Heuristics{
             System.out.println("Number of black pawns eaten: " + numberOfBlackEaten);
             System.out.println("King mobility eval: " + kingMovEval);
             System.out.println("Eval king escapes: " + evalKingEsc);
-            System.out.println("|GAME|: raw value is " + stateValue);
+            System.out.println("|GAME|: value is " + stateValue);
         }
 
-        // Normalizzazione rispetto al massimo teorico
-        double maxValue = 301.0;
-        double normalized = Math.max(0.0, Math.min(1.0, stateValue / maxValue));
-        return normalized;
+        return stateValue;
     }
-
 
     /**
      * @param kPos The king position

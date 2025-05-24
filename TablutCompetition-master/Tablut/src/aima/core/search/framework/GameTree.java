@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import Custom.AIMAGameAshtonTablut;
+import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 
 /**
@@ -95,8 +97,7 @@ public class GameTree<S, A> {
 	
 	public void updateStats(double result, Node<S, A> node) {
 		Ni.put(node.getState(), Ni.get(node.getState()) + 1);
-		//if (result) Wi.put(node.getState(), Wi.get(node.getState()) + 1);
-		if (result>0) Wi.put(node.getState(), Wi.get(node.getState()) + 1);
+		Wi.put(node.getState(), Wi.get(node.getState()) + result);
 
 	}
 	
@@ -121,8 +122,10 @@ public class GameTree<S, A> {
 	public Node<S, A> getChildWithMaxPlayouts(Node<S, A> node) {
 		List<Node<S, A>> best_children = new ArrayList<>();
 		double max_playouts = Double.NEGATIVE_INFINITY;
+		List<Node<S, A>> succ =  successors(node);
 		for (Node<S, A> child : successors(node)) {
-			double playouts = (Ni.get(child.getState()));
+			double ni = Ni.get(child.getState());
+			double playouts = (ni)*AIMAGameAshtonTablut.getUtilityStatic(((State)child.getState()), ((State)node.getState()).getTurn());
 			if (playouts > max_playouts) {
 				max_playouts = playouts;
 				best_children = new ArrayList<>();

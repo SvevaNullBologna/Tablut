@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -15,14 +18,18 @@ import aima.core.search.adversarial.Game;
 public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.client.TablutClient {
 
 	AIMAGameAshtonTablut tablut;
+	GameAshtonTablut tablut1;
 	TreeNode current;
 	TreeNode last;
-	IterativeDeepeningAlphaBetaSearch<State,Action,State.Turn> mcts;
+	IterativeDeepeningAlphaBetaSearch<State, Action, Turn> mcts;
+	IterativeDeepeningAlphaBetaSearch<State, Action, Turn> mcts1;
 
 	public MelanzaninaMinMax(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
         this.tablut = new AIMAGameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");;
-        this.mcts = new IterativeDeepeningAlphaBetaSearch<State, Action, Turn>(tablut, 0, 1, timeout-1);
+        tablut1 = new GameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");
+        this.mcts1 = new TavolettaSearch(tablut1, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, timeout);
+        this.mcts = new TavolettaSearch(tablut, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, timeout);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -61,6 +68,7 @@ public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.
 	        e.printStackTrace();
 	    }
 	    State state = new StateTablut();
+	    
 	    while (true) {
 	        try {
 	            this.read();
@@ -78,11 +86,18 @@ public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.
 	            Logger gameLogger = Logger.getLogger("GameLog");
 	            gameLogger.setUseParentHandlers(false);	  
 
+	            Map<String, List<String>> actions = new HashMap<>();
+
 	    		CanonicalState transformed = CanonicalState.from(((State) state));
 	    		// tree <-- NODE(state)
-	    		
+	    		mcts.setLogEnabled(false);
+	        	mcts1.setLogEnabled(false);
+
 	        	Action best=mcts.makeDecision(transformed);
-	        	best = transformed.getInverse().applyToAction((Action)best);
+	        	Action best1 = mcts1.makeDecision(transformed);
+	    		long time = System.currentTimeMillis();
+	        	System.out.println(System.currentTimeMillis()-time);
+	        	best = transformed.getApplied().reverseAction((Action)best);
 	            try {
 	                this.write(best);
 	            } catch (ClassNotFoundException | IOException e) {

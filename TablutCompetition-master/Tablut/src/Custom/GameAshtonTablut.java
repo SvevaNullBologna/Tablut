@@ -6,9 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,24 +15,23 @@ import java.util.logging.SimpleFormatter;
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
-import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
-import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
 import it.unibo.ai.didattica.competition.tablut.exceptions.*;
 import Custom.BlackHeuristics;
-import Custom.CanonicalState.Symmetry;
 import Custom.Heuristics;
 import Custom.WhiteHeuristics;
 
 /**
- * 
  * Game engine inspired by the Ashton Rules of Tablut
- * 
- * 
- * @author A. Piretti, Andrea Galassi
  *
+ * @author A. Piretti, Andrea Galassi (extended by Gionnino9000)
  */
-public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.Game<State, Action, State.Turn> {
+public class GameAshtonTablut implements Game, Cloneable, aima.core.search.adversarial.Game<State, Action, State.Turn> {
+	/**
+	 * Initial number of pawns for each player
+	 */
+	public final static int NUM_BLACK = 16;
+	public final static int NUM_WHITE = 8;
 
 	/**
 	 * Number of repeated states that can occur before a draw
@@ -42,24 +39,32 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private int repeated_moves_allowed;
 
 	/**
+	 * Number of states kept in memory. negative value means infinite.
+	 */
+	private int cache_size;
+
+	/**
 	 * Counter for the moves without capturing that have occurred
 	 */
 	private int movesWithutCapturing;
+
 	private String gameLogName;
 	private File gameLog;
 	private FileHandler fh;
 	private Logger loggGame;
 	private List<String> citadels;
+	// private List<String> strangeCitadels;
+	private List<State> drawConditions;
 
-	public AIMAGameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName,
-			String blackName) {
+	public GameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName, String blackName) {
 		this(new StateTablut(), repeated_moves_allowed, cache_size, logs_folder, whiteName, blackName);
 	}
 
-	public AIMAGameAshtonTablut(State state, int repeated_moves_allowed, int cache_size, String logs_folder,
-			String whiteName, String blackName) {
+	public GameAshtonTablut(State state, int repeated_moves_allowed, int cache_size, String logs_folder,
+							String whiteName, String blackName) {
 		super();
 		this.repeated_moves_allowed = repeated_moves_allowed;
+		this.cache_size = cache_size;
 		this.movesWithutCapturing = 0;
 
 		Path p = Paths.get(logs_folder + File.separator + "_" + whiteName + "_vs_" + blackName + "_"
@@ -81,6 +86,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 			System.exit(1);
 		}
 		this.loggGame = Logger.getLogger("GameLog");
+		loggGame.setUseParentHandlers(false);
 		loggGame.addHandler(this.fh);
 		this.fh.setFormatter(new SimpleFormatter());
 		loggGame.setLevel(Level.OFF);
@@ -88,6 +94,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		loggGame.fine("Repeated moves allowed:\t" + repeated_moves_allowed + "\tCache:\t" + cache_size);
 		loggGame.fine("Inizio partita");
 		loggGame.fine("Stato:\n" + state.toString());
+		drawConditions = new ArrayList<State>();
 		this.citadels = new ArrayList<String>();
 		// this.strangeCitadels = new ArrayList<String>();
 		this.citadels.add("a4");
@@ -112,12 +119,31 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// this.strangeCitadels.add("e9");
 	}
 
+	/**
+	 * Method to check wheter an action is allowed or not for a given state. If it is not, throws and Exception.
+	 *
+	 * @param state		Current state of the game
+	 * @param action	The action to be checked
+	 *
+	 * @return			the resulting State obtained by performing the given
+	 *
+	 * @throws BoardException if the action causes a pawn to leave the board
+	 * @throws ActionException if the action format is wrong
+	 * @throws StopException if no action is made
+	 * @throws PawnException if a player is trying to move an opponent's pawn
+	 * @throws DiagonalException if a player is trying to move a pawn diagonally
+	 * @throws ClimbingException if a player is trying to make an action that would climb another pawn or special box illegally
+	 * @throws ThroneException if a player is trying to move a pawn to the throne
+	 * @throws OccupiedException if a player is trying to move a pawn onto a box that is already occupied
+	 * @throws ClimbingCitadelException if a player is trying to make an action that would climb the citadel
+	 * @throws CitadelException if a player is trying to move a pawn onto the citadel
+	 */
 	@Override
 	public State checkMove(State state, Action action)
 			throws BoardException, ActionException, StopException, PawnException, DiagonalException, ClimbingException,
 			ThroneException, OccupitedException, ClimbingCitadelException, CitadelException {
 
-		if (isPossibleMove(state, action)) {
+		if(isPossibleMove(state,action)) {
 
 			// se sono arrivato qui, muovo la pedina
 			state = this.movePawn(state, action);
@@ -131,31 +157,49 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 
 			// if something has been captured, clear cache for draws
 			if (this.movesWithutCapturing == 0) {
+				this.drawConditions.clear();
 				this.loggGame.fine("Capture! Draw cache cleared!");
 			}
 
 			// controllo pareggio
-			/*
-			 * int trovati = 0; for (State s : drawConditions) {
-			 * 
-			 * System.out.println(s.toString());
-			 * 
-			 * if (s.equals(state)) { // DEBUG: // // System.out.println("UGUALI:"); //
-			 * System.out.println("STATO VECCHIO:\t" + s.toLinearString()); //
-			 * System.out.println("STATO NUOVO:\t" + // state.toLinearString());
-			 * 
-			 * trovati++; if (trovati > repeated_moves_allowed) {
-			 * state.setTurn(State.Turn.DRAW); this.loggGame.
-			 * fine("Partita terminata in pareggio per numero di stati ripetuti"); break; }
-			 * } else { // DEBUG: // // System.out.println("DIVERSI:"); //
-			 * System.out.println("STATO VECCHIO:\t" + s.toLinearString()); //
-			 * System.out.println("STATO NUOVO:\t" + // state.toLinearString()); } } if
-			 * (trovati > 0) { this.loggGame.fine("Equal states found: " + trovati); }
-			 * this.drawConditions.add(state.clone());
-			 */
+			int trovati = 0;
+			for (State s : drawConditions) {
+
+				System.out.println(s.toString());
+
+				if (s.equals(state)) {
+					// DEBUG: //
+					// System.out.println("UGUALI:");
+					// System.out.println("STATO VECCHIO:\t" + s.toLinearString());
+					// System.out.println("STATO NUOVO:\t" +
+					// state.toLinearString());
+
+					trovati++;
+					if (trovati > repeated_moves_allowed) {
+						state.setTurn(State.Turn.DRAW);
+						this.loggGame.fine("Partita terminata in pareggio per numero di stati ripetuti");
+						break;
+					}
+				} else {
+					// DEBUG: //
+					// System.out.println("DIVERSI:");
+					// System.out.println("STATO VECCHIO:\t" + s.toLinearString());
+					// System.out.println("STATO NUOVO:\t" +
+					// state.toLinearString());
+				}
+			}
+			if (trovati > 0) {
+				this.loggGame.fine("Equal states found: " + trovati);
+			}
+			if (cache_size >= 0 && this.drawConditions.size() > cache_size) {
+				this.drawConditions.remove(0);
+			}
+			this.drawConditions.add(state.clone());
+
+			this.loggGame.fine("Current draw cache size: " + this.drawConditions.size());
 
 			this.loggGame.fine("Stato:\n" + state.toString());
-			// System.out.println("Stato:\n" + state.toString());
+			System.out.println("Stato:\n" + state.toString());
 
 			return state;
 		}
@@ -168,13 +212,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		if (a.getColumnTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo(), a.getColumnTo() + 1).equalsPawn("B")
 				&& (state.getPawn(a.getRowTo(), a.getColumnTo() + 2).equalsPawn("W")
-						|| state.getPawn(a.getRowTo(), a.getColumnTo() + 2).equalsPawn("T")
-						|| state.getPawn(a.getRowTo(), a.getColumnTo() + 2).equalsPawn("K")
-						|| (this.citadels.contains(state.getBox(a.getRowTo(), a.getColumnTo() + 2))
-								&& !(a.getColumnTo() + 2 == 8 && a.getRowTo() == 4)
-								&& !(a.getColumnTo() + 2 == 4 && a.getRowTo() == 0)
-								&& !(a.getColumnTo() + 2 == 4 && a.getRowTo() == 8)
-								&& !(a.getColumnTo() + 2 == 0 && a.getRowTo() == 4)))) {
+				|| state.getPawn(a.getRowTo(), a.getColumnTo() + 2).equalsPawn("T")
+				|| state.getPawn(a.getRowTo(), a.getColumnTo() + 2).equalsPawn("K")
+				|| (this.citadels.contains(state.getBox(a.getRowTo(), a.getColumnTo() + 2))
+				&& !(a.getColumnTo() + 2 == 8 && a.getRowTo() == 4)
+				&& !(a.getColumnTo() + 2 == 4 && a.getRowTo() == 0)
+				&& !(a.getColumnTo() + 2 == 4 && a.getRowTo() == 8)
+				&& !(a.getColumnTo() + 2 == 0 && a.getRowTo() == 4)))) {
 			state.removePawn(a.getRowTo(), a.getColumnTo() + 1);
 			this.movesWithutCapturing = -1;
 			this.loggGame.fine("Pedina nera rimossa in: " + state.getBox(a.getRowTo(), a.getColumnTo() + 1));
@@ -182,13 +226,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// controllo se mangio a sinistra
 		if (a.getColumnTo() > 1 && state.getPawn(a.getRowTo(), a.getColumnTo() - 1).equalsPawn("B")
 				&& (state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("W")
-						|| state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("T")
-						|| state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("K")
-						|| (this.citadels.contains(state.getBox(a.getRowTo(), a.getColumnTo() - 2))
-								&& !(a.getColumnTo() - 2 == 8 && a.getRowTo() == 4)
-								&& !(a.getColumnTo() - 2 == 4 && a.getRowTo() == 0)
-								&& !(a.getColumnTo() - 2 == 4 && a.getRowTo() == 8)
-								&& !(a.getColumnTo() - 2 == 0 && a.getRowTo() == 4)))) {
+				|| state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("T")
+				|| state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("K")
+				|| (this.citadels.contains(state.getBox(a.getRowTo(), a.getColumnTo() - 2))
+				&& !(a.getColumnTo() - 2 == 8 && a.getRowTo() == 4)
+				&& !(a.getColumnTo() - 2 == 4 && a.getRowTo() == 0)
+				&& !(a.getColumnTo() - 2 == 4 && a.getRowTo() == 8)
+				&& !(a.getColumnTo() - 2 == 0 && a.getRowTo() == 4)))) {
 			state.removePawn(a.getRowTo(), a.getColumnTo() - 1);
 			this.movesWithutCapturing = -1;
 			this.loggGame.fine("Pedina nera rimossa in: " + state.getBox(a.getRowTo(), a.getColumnTo() - 1));
@@ -196,13 +240,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// controllo se mangio sopra
 		if (a.getRowTo() > 1 && state.getPawn(a.getRowTo() - 1, a.getColumnTo()).equalsPawn("B")
 				&& (state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("W")
-						|| state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("T")
-						|| state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("K")
-						|| (this.citadels.contains(state.getBox(a.getRowTo() - 2, a.getColumnTo()))
-								&& !(a.getColumnTo() == 8 && a.getRowTo() - 2 == 4)
-								&& !(a.getColumnTo() == 4 && a.getRowTo() - 2 == 0)
-								&& !(a.getColumnTo() == 4 && a.getRowTo() - 2 == 8)
-								&& !(a.getColumnTo() == 0 && a.getRowTo() - 2 == 4)))) {
+				|| state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("T")
+				|| state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("K")
+				|| (this.citadels.contains(state.getBox(a.getRowTo() - 2, a.getColumnTo()))
+				&& !(a.getColumnTo() == 8 && a.getRowTo() - 2 == 4)
+				&& !(a.getColumnTo() == 4 && a.getRowTo() - 2 == 0)
+				&& !(a.getColumnTo() == 4 && a.getRowTo() - 2 == 8)
+				&& !(a.getColumnTo() == 0 && a.getRowTo() - 2 == 4)))) {
 			state.removePawn(a.getRowTo() - 1, a.getColumnTo());
 			this.movesWithutCapturing = -1;
 			this.loggGame.fine("Pedina nera rimossa in: " + state.getBox(a.getRowTo() - 1, a.getColumnTo()));
@@ -211,13 +255,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		if (a.getRowTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo() + 1, a.getColumnTo()).equalsPawn("B")
 				&& (state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("W")
-						|| state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("T")
-						|| state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("K")
-						|| (this.citadels.contains(state.getBox(a.getRowTo() + 2, a.getColumnTo()))
-								&& !(a.getColumnTo() == 8 && a.getRowTo() + 2 == 4)
-								&& !(a.getColumnTo() == 4 && a.getRowTo() + 2 == 0)
-								&& !(a.getColumnTo() == 4 && a.getRowTo() + 2 == 8)
-								&& !(a.getColumnTo() == 0 && a.getRowTo() + 2 == 4)))) {
+				|| state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("T")
+				|| state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("K")
+				|| (this.citadels.contains(state.getBox(a.getRowTo() + 2, a.getColumnTo()))
+				&& !(a.getColumnTo() == 8 && a.getRowTo() + 2 == 4)
+				&& !(a.getColumnTo() == 4 && a.getRowTo() + 2 == 0)
+				&& !(a.getColumnTo() == 4 && a.getRowTo() + 2 == 8)
+				&& !(a.getColumnTo() == 0 && a.getRowTo() + 2 == 4)))) {
 			state.removePawn(a.getRowTo() + 1, a.getColumnTo());
 			this.movesWithutCapturing = -1;
 			this.loggGame.fine("Pedina nera rimossa in: " + state.getBox(a.getRowTo() + 1, a.getColumnTo()));
@@ -240,7 +284,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private State checkCaptureBlackKingLeft(State state, Action a) {
 		// ho il re sulla sinistra
 		if (a.getColumnTo() > 1 && state.getPawn(a.getRowTo(), a.getColumnTo() - 1).equalsPawn("K")) {
-			// System.out.println("Ho il re sulla sinistra");
+			//System.out.println("Ho il re sulla sinistra");
 			// re sul trono
 			if (state.getBox(a.getRowTo(), a.getColumnTo() - 1).equals("e5")) {
 				if (state.getPawn(3, 4).equalsPawn("B") && state.getPawn(4, 3).equalsPawn("B")
@@ -292,7 +336,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// ho il re sulla destra
 		if (a.getColumnTo() < state.getBoard().length - 2
 				&& (state.getPawn(a.getRowTo(), a.getColumnTo() + 1).equalsPawn("K"))) {
-			// System.out.println("Ho il re sulla destra");
+			//System.out.println("Ho il re sulla destra");
 			// re sul trono
 			if (state.getBox(a.getRowTo(), a.getColumnTo() + 1).equals("e5")) {
 				if (state.getPawn(3, 4).equalsPawn("B") && state.getPawn(4, 5).equalsPawn("B")
@@ -344,7 +388,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// ho il re sotto
 		if (a.getRowTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo() + 1, a.getColumnTo()).equalsPawn("K")) {
-			// System.out.println("Ho il re sotto");
+			//System.out.println("Ho il re sotto");
 			// re sul trono
 			if (state.getBox(a.getRowTo() + 1, a.getColumnTo()).equals("e5")) {
 				if (state.getPawn(5, 4).equalsPawn("B") && state.getPawn(4, 5).equalsPawn("B")
@@ -395,7 +439,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private State checkCaptureBlackKingUp(State state, Action a) {
 		// ho il re sopra
 		if (a.getRowTo() > 1 && state.getPawn(a.getRowTo() - 1, a.getColumnTo()).equalsPawn("K")) {
-			// System.out.println("Ho il re sopra");
+			//System.out.println("Ho il re sopra");
 			// re sul trono
 			if (state.getBox(a.getRowTo() - 1, a.getColumnTo()).equals("e5")) {
 				if (state.getPawn(3, 4).equalsPawn("B") && state.getPawn(4, 5).equalsPawn("B")
@@ -477,9 +521,9 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// mangio a sinistra
 		if (a.getColumnTo() > 1 && state.getPawn(a.getRowTo(), a.getColumnTo() - 1).equalsPawn("W")
 				&& (state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("B")
-						|| state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("T")
-						|| this.citadels.contains(state.getBox(a.getRowTo(), a.getColumnTo() - 2))
-						|| (state.getBox(a.getRowTo(), a.getColumnTo() - 2).equals("e5")))) {
+				|| state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("T")
+				|| this.citadels.contains(state.getBox(a.getRowTo(), a.getColumnTo() - 2))
+				|| (state.getBox(a.getRowTo(), a.getColumnTo() - 2).equals("e5")))) {
 			state.removePawn(a.getRowTo(), a.getColumnTo() - 1);
 			this.movesWithutCapturing = -1;
 			this.loggGame.fine("Pedina bianca rimossa in: " + state.getBox(a.getRowTo(), a.getColumnTo() - 1));
@@ -491,9 +535,9 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		// controllo se mangio sopra
 		if (a.getRowTo() > 1 && state.getPawn(a.getRowTo() - 1, a.getColumnTo()).equalsPawn("W")
 				&& (state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("B")
-						|| state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("T")
-						|| this.citadels.contains(state.getBox(a.getRowTo() - 2, a.getColumnTo()))
-						|| (state.getBox(a.getRowTo() - 2, a.getColumnTo()).equals("e5")))) {
+				|| state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("T")
+				|| this.citadels.contains(state.getBox(a.getRowTo() - 2, a.getColumnTo()))
+				|| (state.getBox(a.getRowTo() - 2, a.getColumnTo()).equals("e5")))) {
 			state.removePawn(a.getRowTo() - 1, a.getColumnTo());
 			this.movesWithutCapturing = -1;
 			this.loggGame.fine("Pedina bianca rimossa in: " + state.getBox(a.getRowTo() - 1, a.getColumnTo()));
@@ -506,9 +550,9 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		if (a.getRowTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo() + 1, a.getColumnTo()).equalsPawn("W")
 				&& (state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("B")
-						|| state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("T")
-						|| this.citadels.contains(state.getBox(a.getRowTo() + 2, a.getColumnTo()))
-						|| (state.getBox(a.getRowTo() + 2, a.getColumnTo()).equals("e5")))) {
+				|| state.getPawn(a.getRowTo() + 2, a.getColumnTo()).equalsPawn("T")
+				|| this.citadels.contains(state.getBox(a.getRowTo() + 2, a.getColumnTo()))
+				|| (state.getBox(a.getRowTo() + 2, a.getColumnTo()).equals("e5")))) {
 			state.removePawn(a.getRowTo() + 1, a.getColumnTo());
 			this.movesWithutCapturing = -1;
 			this.loggGame.fine("Pedina bianca rimossa in: " + state.getBox(a.getRowTo() + 1, a.getColumnTo()));
@@ -574,18 +618,30 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return repeated_moves_allowed;
 	}
 
+	public int getCache_size() {
+		return cache_size;
+	}
+
+	public List<State> getDrawConditions() {
+		return drawConditions;
+	}
+
+	public void clearDrawConditions() {
+		drawConditions.clear();
+	}
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Auxiliary method used to check wheter an action is allowed or not for a given
-	 * state.
+	 * Auxiliary method used to check wheter an action is allowed or not for a given state.
 	 *
-	 * @param state  Current state of the game
-	 * @param action The action to be checked
+	 * @param state		Current state of the game
+	 * @param action	The action to be checked
 	 *
-	 * @return true if the action is allowed, false otherwise.
+	 * @return			true if the action is allowed, false otherwise.
 	 */
-	private boolean isPossibleMove(State state, Action action) {
+	private boolean isPossibleMove(State state, Action action)
+	{
 		this.loggGame.fine(action.toString());
 		// controllo la mossa
 		if (action.getTo().length() != 2 || action.getFrom().length() != 2) {
@@ -724,270 +780,239 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return super.clone();
 	}
 
-	private Map<State, Map<Action, State>> results = new HashMap<>();
-
-	private static Map<State, Double> utilities = new HashMap<>();
-
-	/**
-	 * Method that compute a list of all possible actions for the current player
-	 * according to the rules of the game
-	 *
-	 * @param state Current state of the game
-	 *
-	 * @return List of all the Action allowed from current state for each pawn of
-	 *         the player
-	 */
 	@Override
-	public List<Action> getActions(State state) {
-		State.Turn turn = state.getTurn();
-		if (!results.containsKey(state)) {
-			List<Action> possibleActions = new ArrayList<>();
-			List<String> possibleActionsSymmetries = new ArrayList<>();
-			results.put(state, new HashMap<>());
-			// Loop through rows
-			for (int i = 0; i < 9; i++) {
-				// Loop through columns
-				for (int j = 0; j < 9; j++) {
-					State.Pawn p = state.getPawn(i, j);
-					// If pawn color is equal of turn color
-					if (p.toString().equals(turn.toString())
-							|| (p.equals(State.Pawn.KING) && turn.equals(State.Turn.WHITE))) {
-						boolean alreadyVisitedASymmetricalPawn = false;
-						List<Symmetry> symmetriesOfState = ((CanonicalState) state).getIsSymmetricalBy();
-						for (Symmetry s : symmetriesOfState) {
-							int transformedCell = s.getContentIndexesForCell(i, j);
-							int transformedRow = transformedCell / 10;
-							int transformedColumn = transformedCell % 10;
-							if (transformedRow < i || (transformedRow == i && transformedColumn < j)) {
-								alreadyVisitedASymmetricalPawn = true;
-								break;
-							}
-						}
-						if (alreadyVisitedASymmetricalPawn)
-							continue;
-						// Search on top of pawn
-						try {
-							for (int k = i-1; k >= 0; k--) {
-								// Break if pawn is out of citadels, and it is moving on a citadel
-								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(k, j))) {
-									break;
-								}
-								// Check if we are moving on an empty cell
-								else if (state.getPawn(k, j).equalsPawn(State.Pawn.EMPTY.toString())) {
-
-									String from = state.getBox(i, j);
-									String to = state.getBox(k, j);
-									Action action = new Action(from, to, turn);
-									if (!possibleActionsSymmetries.contains(action.toString())
-											&& isPossibleMove(state.clone(), action)) {
-										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
-									}
-								}
-								/*
-								 * try { State result = CanonicalState.from(checkMove(state.clone(), action));
-								 * if (!results.get(state).containsValue(result)) results.get(state).put(action,
-								 * result); } catch (Exception e) { break; }
-								 */
-							}
-							// Search on bottom of pawn
-							for (int k = i+1; k < state.getBoard().length; k++) {
-								// Break if pawn is out of citadels, and it is moving on a citadel
-								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(k, j))) {
-									break;
-								}
-								// Check if we are moving on an empty cell
-								else if (state.getPawn(k, j).equalsPawn(State.Pawn.EMPTY.toString())) {
-									String from = state.getBox(i, j);
-									String to = state.getBox(k, j);
-
-									Action action = new Action(from, to, turn);
-									if (!possibleActionsSymmetries.contains(action.toString())
-											&& isPossibleMove(state.clone(), action)) {
-										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
-									}
-								}
-								/*
-								 * try { State result = CanonicalState.from(checkMove(state.clone(), action));
-								 * if (!results.get(state).containsValue(result)) results.get(state).put(action,
-								 * result); } catch (Exception e) { break; }
-								 */
-							}
-
-							// Search on left of pawn
-							for (int k = j-1; k >= 0; k--) {
-								// Break if pawn is out of citadels, and it is moving on a citadel
-								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(i, k))) {
-									break;
-								}
-								// Check if we are moving on an empty cell
-								else if (state.getPawn(i, k).equalsPawn(State.Pawn.EMPTY.toString())) {
-									String from = state.getBox(i, j);
-									String to = state.getBox(i, k);
-
-									Action action = new Action(from, to, turn);
-									if (!possibleActionsSymmetries.contains(action.toString())
-											&& isPossibleMove(state.clone(), action)) {
-										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
-									}
-								}
-								/*
-								 * try { State result = CanonicalState.from(checkMove(state.clone(), action));
-								 * if (!results.get(state).containsValue(result)) results.get(state).put(action,
-								 * result); } catch (Exception e) { break; }
-								 */
-							}
-							// Search on right of pawn
-							for (int k = j+1; k < state.getBoard().length; k++) {
-								// Break if pawn is out of citadels, and it is moving on a citadel
-								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(i, k))) {
-									break;
-								}
-								// Check if we are moving on an empty cell
-								else if (state.getPawn(i, k).equalsPawn(State.Pawn.EMPTY.toString())) {
-									String from = state.getBox(i, j);
-									String to = state.getBox(i, k);
-
-									Action action = new Action(from, to, turn);
-									if (!possibleActionsSymmetries.contains(action.toString())
-											&& isPossibleMove(state.clone(), action)) {
-										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
-									}
-								}
-								/*
-								 * try { State result = CanonicalState.from(checkMove(state.clone(), action));
-								 * if (!results.get(state).containsValue(result)) results.get(state).put(action,
-								 * result); } catch (Exception e) { break; }
-								 */
-							}
-						} catch (Exception e) {
-							e.printStackTrace();
-							System.exit(2);
-						}
-					}
-				}
-			}
-			return possibleActions;
-		}
-		return results.get(state).keySet().stream().toList();
-
-	// actions = results.get(canonical).keySet().stream().toList();
+	public void endGame(State state) {
+		this.loggGame.fine("Stato:\n"+state.toString());
 	}
 
 	/**
-	 * Method that performs an action in a given state and returns the resulting
-	 * state
+	 * Get the player who must make the next move
 	 *
-	 * @param state  Current state
+	 * @param state Current state of the game
+	 *
+	 * @return The turn of the game (W = WHITE, B = BLACK)
+	 */
+	@Override
+	public State.Turn getPlayer(State state)
+	{
+		return state.getTurn();
+	}
+
+	/**
+	 * Method that compute a list of all possible actions for the current player according to the rules of the game
+	 *
+	 * @param state Current state of the game
+	 *
+	 * @return List of all the Action allowed from current state for each pawn of the player
+	 */
+	@Override
+	public List<Action> getActions(State state)
+	{
+		State.Turn turn = state.getTurn();
+		List<Action> possibleActions = new ArrayList<Action>();
+
+		// Loop through rows
+		for (int i = 0; i < state.getBoard().length; i++)
+		{
+			// Loop through columns
+			for (int j = 0; j < state.getBoard().length; j++)
+			{
+				State.Pawn p = state.getPawn(i, j);
+
+				// If pawn color  is equal of turn color
+				if (p.toString().equals(turn.toString())
+						|| (p.equals(State.Pawn.KING) && turn.equals(State.Turn.WHITE)))
+				{
+					// Search on top of pawn
+					for (int k = i-1; k >= 0; k--) {
+						// Break if pawn is out of citadels, and it is moving on a citadel
+						if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(k, j)))
+						{
+							break;
+						}
+						// Check if we are moving on an empty cell
+						else if (state.getPawn(k, j).equalsPawn(State.Pawn.EMPTY.toString()))
+						{
+							String from = state.getBox(i, j);
+							String to = state.getBox(k, j);
+
+							Action action = null;
+							try {
+								action = new Action(from, to, turn);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+
+							// Check if action is admissible and if it is, add it to list possibleActions
+							if(isPossibleMove(state.clone(), action))
+								possibleActions.add(action);
+
+						} else break; // There is a pawn in the same column, and it cannot be crossed
+					}
+
+					// Search on bottom of pawn
+					for (int k = i+1; k < state.getBoard().length; k++)
+					{
+						// Break if pawn is out of citadels, and it is moving on a citadel
+						if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(k, j)))
+						{
+							break;
+						}
+						// Check if we are moving on a empty cell
+						else if (state.getPawn(k, j).equalsPawn(State.Pawn.EMPTY.toString()))
+						{
+							String from = state.getBox(i, j);
+							String to = state.getBox(k, j);
+
+							Action action = null;
+							try {
+								action = new Action(from, to, turn);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+
+							// Check if action is admissible and if it is, add it to list possibleActions
+							if(isPossibleMove(state.clone(), action))
+								possibleActions.add(action);
+
+						} else 	break; // There is a pawn in the same column, and it cannot be crossed
+					}
+
+					// Search on left of pawn
+					for (int k = j-1; k >= 0; k--)
+					{
+						// Break if pawn is out of citadels, and it is moving on a citadel
+						if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(i, k)))
+						{
+							break;
+						}
+						// Check if we are moving on an empty cell
+						else if (state.getPawn(i, k).equalsPawn(State.Pawn.EMPTY.toString()))
+						{
+							String from = state.getBox(i, j);
+							String to = state.getBox(i, k);
+
+							Action action = null;
+							try {
+								action = new Action(from, to, turn);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+
+							// Check if action is admissible and if it is, add it to list possibleActions
+							if(isPossibleMove(state.clone(), action))
+								possibleActions.add(action);
+
+						} else break; // There is a pawn in the same row, and it cannot be crossed
+					}
+
+					// Search on right of pawn
+					for (int k = j+1; k < state.getBoard().length; k++)
+					{
+						// Break if pawn is out of citadels, and it is moving on a citadel
+						if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(i, k)))
+						{
+							break;
+						}
+
+						// Check if we are moving on a empty cell
+						else if (state.getPawn(i, k).equalsPawn(State.Pawn.EMPTY.toString()))
+						{
+							String from = state.getBox(i, j);
+							String to = state.getBox(i, k);
+
+							Action action = null;
+							try {
+								action = new Action(from, to, turn);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+
+							// Check if action is admissible and if it is, add it to list possibleActions
+							if(isPossibleMove(state.clone(), action))
+								possibleActions.add(action);
+
+						} else break; // There is a pawn in the same row, and it cannot be crossed
+					}
+				}
+			}
+		}
+		return possibleActions;
+	}
+
+	/**
+	 * Method that performs an action in a given state and returns the resulting state
+	 *
+	 * @param state Current state
 	 * @param action Action admissible on the given state
 	 *
 	 * @return State obtained after performing the action
 	 */
 	@Override
-	public State getResult(State state, Action action) {
-		if (!results.containsKey(state))
-			results.put(state, new HashMap<>());
-		if (!results.get(state).containsKey(action))
-			try {
-				State result = movePawn(state.clone(), action);
-				// State result = CanonicalState.from(checkMove(state.clone(), action));
-				// if (!results.get(state).containsValue(result))
-				if (state.getTurn().equalsTurn("B"))
-					result = this.checkCaptureBlack(result, action);
-				else if (state.getTurn().equalsTurn("W")) {
-					result = this.checkCaptureWhite(result, action);
-				}
-				results.get(state).put(action, CanonicalState.from(result));
-			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(3);
-			}
-		return results.get(state).get(action);
+	public State getResult(State state, Action action)
+	{
+		// Move pawn
+		state = this.movePawn(state.clone(), action);
+
+		// Check the state for any capture
+		if (state.getTurn().equalsTurn("W"))
+			state = this.checkCaptureBlack(state, action);
+		else if (state.getTurn().equalsTurn("B"))
+			state = this.checkCaptureWhite(state, action);
+
+		return state;
 	}
 
 	/**
-	 * Check if a state is terminal, since a player has either won or drawn (i.e.
-	 * the game ends)
+	 * Check if a state is terminal, since a player has either won or drawn (i.e. the game ends)
 	 *
 	 * @param state Current state of the game
 	 *
 	 * @return true if the current state is terminal, otherwise false
 	 */
 	@Override
-	public boolean isTerminal(State state) {
-		return state.getTurn().equals(State.Turn.WHITEWIN) || state.getTurn().equals(State.Turn.BLACKWIN)
-				|| state.getTurn().equals(State.Turn.DRAW);
+	public boolean isTerminal(State state)
+	{
+		return state.getTurn().equals(State.Turn.WHITEWIN) ||
+				state.getTurn().equals(State.Turn.BLACKWIN) ||
+				state.getTurn().equals(State.Turn.DRAW);
 	}
 
 	/**
 	 * Method to evaluate a state using heuristics
 	 *
-	 * @param state Current state
-	 * @param turn  Player that want to find the best moves in the search space
+	 * @param state	Current state
+	 * @param turn	Player that want to find the best moves in the search space
 	 *
 	 * @return Evaluation of the state
 	 */
 	@Override
-	public double getUtility(State state, State.Turn turn) {
-		if (!utilities.containsKey(state)) {
-			// Terminal state
-			if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.BLACKWIN))
-					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.WHITEWIN)))
-				return Double.POSITIVE_INFINITY; // Win
-			else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
-					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
-				return Double.NEGATIVE_INFINITY; // Lose
+	public double getUtility(State state, State.Turn turn)
+	{
+		// Terminal state
+		if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.BLACKWIN))
+				|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.WHITEWIN)))
+			return Double.POSITIVE_INFINITY; // Win
+		else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
+				|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
+			return Double.NEGATIVE_INFINITY; // Lose
 
-			// Non-terminal state => get Heuristics for the current state
-			Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state)
-					: new BlackHeuristics(state);
-			utilities.put(state, heuristics.evaluateState());
-		}
-		return utilities.get(state);
+		// Non-terminal state => get Heuristics for the current state
+		Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state) : new BlackHeuristics(state);
+		return heuristics.evaluateState();
 	}
 
-	public static double getUtilityStatic(State state, State.Turn turn) {
-		if (!utilities.containsKey(state)) {
-			// Terminal state
-			if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.BLACKWIN))
-					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.WHITEWIN)))
-				return Double.POSITIVE_INFINITY; // Win
-			else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
-					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
-				return Double.NEGATIVE_INFINITY; // Lose
-
-			// Non-terminal state => get Heuristics for the current state
-			Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state)
-					: new BlackHeuristics(state);
-			utilities.put(state, heuristics.evaluateState());
-		}
-		return utilities.get(state);
-	}
-
+	/* Not used in AlphaBetaSearch */
 	@Override
-	public State getInitialState() {
+	public State getInitialState()
+	{
 		return null;
 	}
 
+	/* Not used in AlphaBetaSearch */
 	@Override
-	public State.Turn[] getPlayers() {
+	public State.Turn[] getPlayers()
+	{
 		return State.Turn.values();
-	}
-
-	@Override
-	public Turn getPlayer(State state) {
-		return state.getTurn();
-	}
-
-	@Override
-	public void endGame(State state) {
-		this.loggGame.fine("Stato:\n" + state.toString());
 	}
 }
