@@ -97,12 +97,16 @@ public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.
 	        	Action best1 = mcts1.makeDecision(transformed);
 	    		long time = System.currentTimeMillis();
 	        	System.out.println(System.currentTimeMillis()-time);
-	        	best = transformed.getApplied().reverseAction((Action)best);
+	        	System.out.println(transformed.getApplied());
+	        	System.out.println(best);
+	        	best = transformed.getInverse().reverseAction((Action)best);
+	        	System.out.println(best);
 	            try {
 	                this.write(best);
 	            } catch (ClassNotFoundException | IOException e) {
 	                e.printStackTrace();
 	            }
+	            
 	        	/*last = current;
 	            current = new TreeNode(state, last, null);
 	            System.setOut(nullStream); // Java 11+
