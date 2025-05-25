@@ -1,5 +1,6 @@
 package aima.core.search.adversarial;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,8 @@ import Custom.CanonicalState.Symmetry;
 import aima.core.search.framework.Metrics;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
+import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
+import it.unibo.ai.didattica.competition.tablut.domain.Action;
 
 /**
  * Implements an iterative deepening Minimax search with alpha-beta pruning and
@@ -86,9 +89,9 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	 * Monsio who had the idea of ordering actions by utility in subsequent
 	 * depth-limited search runs.
 	 */
+	private int move = 1;
 	@Override
-	public A makeDecision(S state) {
-		State s=(State)state;
+	public A makeDecision(S state) {State s=(State)state;
 		AIMAGameAshtonTablut g = (AIMAGameAshtonTablut)game;
 		int currentPawns=s.getNumberOf(Pawn.BLACK)+s.getNumberOf(Pawn.WHITE);
 		if(currentPawns<lastPawns)
@@ -132,6 +135,12 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 			}
 			g.setDrawConditions(realDrawConditions);
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
+		State post = (State) game.getResult(state, results.get(0));
+		post.setTurn(Turn.DRAW);
+		if (!realDrawConditions.containsKey(post))
+			realDrawConditions.put(post, new ArrayList<>());
+		realDrawConditions.get(post).add(((CanonicalState) post).getApplied().compose(realDrawConditions.get(post).size()>0? realDrawConditions.get(post).getLast():Symmetry.IDENTITY));
+		g.setDrawConditions(realDrawConditions);
 		System.out.println(state.toString()+ results.get(0));			
 		return results.get(0);
 	}

@@ -751,8 +751,10 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	public List<Action> getActions(State state) {
 		State.Turn turn = state.getTurn();
 		if (!drawConditions.containsKey(state)) {
-			drawConditions.put(state, new ArrayList<>());
-			drawConditions.get(state).add(((CanonicalState) state).getApplied());
+			State s = state.clone();
+			s.setTurn(Turn.DRAW);
+			drawConditions.put(s, new ArrayList<>());
+			drawConditions.get(s).add(((CanonicalState) state).getApplied());
 		} else
 			drawConditions.get(state)
 					.add(drawConditions.get(state).getLast().compose(((CanonicalState) state).getApplied()));
@@ -931,9 +933,11 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 				System.exit(3);
 			}
 		State result = CanonicalState.from(results.get(state).get(action).clone());
-		if (drawConditions.containsKey(result) && drawConditions.get(result)
+		Turn turn = result.getTurn();
+		result.setTurn(Turn.DRAW);
+		if (!drawConditions.containsKey(result) || !drawConditions.get(result)
 				.contains(((CanonicalState) result).getApplied().compose(drawConditions.get(result).getLast())))
-			result.setTurn(State.Turn.DRAW);
+			result.setTurn(turn);
 		return result;
 	}
 
