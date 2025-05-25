@@ -18,7 +18,7 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
 		this.turn = Turn.valueOf(player.toUpperCase());
         this.tablut = new GameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");
-        this.mcts = new MCTS(timeout, 10, tablut);
+        this.mcts = new MCTS(timeout,  tablut);
 
 	}
 
@@ -90,10 +90,13 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 
 		while (true) {
 			updateTreeFromServer();
+			if(tree!=null && isGameOver(this.tree.getState())){
+				System.out.println("Game over: " + tree.getState().getTurn());
+				break;
+			}
 			if (tree != null && tree.getState().getTurn().equals(this.turn)) {
 				try {
 					TreeNode bestNode = mcts.montecarlo(tree , this.turn);
-					writeLogs.write("BEST NODE: " + bestNode.toString());
 					if (bestNode == null || bestNode.getOriginAction() == null) {
 						throw new IllegalStateException("MCTS returned no valid move.");
 					}
@@ -104,6 +107,11 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 				}
 			}
 		}
+	}
+
+	private boolean isGameOver(State state){
+		Turn t = state.getTurn();
+		return t == Turn.WHITEWIN || t == Turn.BLACKWIN || t == Turn.DRAW;
 	}
 
 }

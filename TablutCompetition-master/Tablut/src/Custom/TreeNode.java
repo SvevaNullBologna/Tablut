@@ -92,10 +92,6 @@ public class TreeNode{
     		this.value += value;
     	}
     	this.visitCount++;
-
-        writeLogs.write("visited node:\n" + this);
-        writeLogs.write("\nvalue = " + value + "\n");
-        writeLogs.write("\ntotal value = " + this.value + "\n");
     }
     
     public boolean hasBeenExpanded(){
@@ -152,7 +148,7 @@ public class TreeNode{
         } else if (result == State.Turn.BLACKWIN) {
             return this.turn == State.Turn.BLACK ? Constants.WIN : Constants.LOSE;
         } else if (result == State.Turn.DRAW) {
-            return Constants.DRAW;
+            return Constants.DRAW(this.turn);
         }
         else{
             return  Constants.NOT_A_TERMINAL_STATE;

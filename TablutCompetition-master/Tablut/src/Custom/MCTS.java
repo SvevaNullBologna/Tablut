@@ -8,13 +8,12 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 
 
 public class MCTS extends MCTSBase {
-	private int max_time; 
-	private int max_memory;
-	
-	public MCTS(int max_time, int max_memory, Game rules) {
+	private final int max_time;
+	private final int max_memory = (int) (Runtime.getRuntime().maxMemory() * 0.75/1024);
+
+	public MCTS(int max_time, Game rules) {
 		super(rules);
 		this.max_time = max_time;
-		this.max_memory = max_memory;
 	}
 
 	//Now I pass an updated tree. That means, we just go to the bottom of it and start from there, cutting previous possible branches
@@ -22,7 +21,7 @@ public class MCTS extends MCTSBase {
 		long startTime = System.currentTimeMillis();
 	    boolean hasSimulatedAtLeastOnce = false;
 
-		while (System.currentTimeMillis() - startTime < (max_time-1500)) {
+		while (resourcesAvailable(startTime)) {
 			TreeNode selected = select(partenza, turn);
 			if (selected == null) continue;
 
@@ -97,7 +96,7 @@ public class MCTS extends MCTSBase {
 			State.Turn outcome = simulating_state.getTurn(); // This now holds WHITEWIN, BLACKWIN, or DRAW
 
 			if (outcome == State.Turn.DRAW) {
-				return Constants.DRAW;
+				return Constants.DRAW(starting_player);
 			} else if ((outcome == State.Turn.WHITEWIN && starting_player == State.Turn.WHITE) ||
 					(outcome == State.Turn.BLACKWIN && starting_player == State.Turn.BLACK)) {
 				return Constants.WIN;
@@ -115,7 +114,14 @@ public class MCTS extends MCTSBase {
 			node = node.getParent();
 		}
 	}
-	
 
-	
+	private boolean resourcesAvailable(long startTime){
+		long elapsedTime = System.currentTimeMillis() - startTime;
+		long usedMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+		long memoryLimit = max_memory * 1024L;
+
+		return elapsedTime < (max_time - 1500) && usedMemory < memoryLimit;
+	}
+
+
 }

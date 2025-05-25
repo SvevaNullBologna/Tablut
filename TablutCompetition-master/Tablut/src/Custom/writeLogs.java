@@ -5,7 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class writeLogs {
-    public  static  final String file_path = "D:\\Tablut\\TablutCompetition-master\\Tablut\\src\\Custom\\PersonalLogs.txt";
+    public  static  final String file_path = "C:\\Users\\Sveva\\IdeaProjects\\Tablut\\TablutCompetition-master\\Tablut\\src\\Custom\\PersonalLogs.txt";
     public static void  write(String stringa){
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(file_path, true));
