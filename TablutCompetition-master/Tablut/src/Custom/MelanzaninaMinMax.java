@@ -22,14 +22,11 @@ public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.
 	TreeNode current;
 	TreeNode last;
 	IterativeDeepeningAlphaBetaSearch<State, Action, Turn> mcts;
-	IterativeDeepeningAlphaBetaSearch<State, Action, Turn> mcts1;
 
 	public MelanzaninaMinMax(String player, int timeout, String ipAddress) throws UnknownHostException, IOException {
 		super(player.toUpperCase(), "Melanzanin", timeout, ipAddress);
         this.tablut = new AIMAGameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");;
-        tablut1 = new GameAshtonTablut(0, -1, "logs", "white_ai", "black_ai");
-        this.mcts1 = new TavolettaSearch(tablut1, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, timeout);
-        this.mcts = new TavolettaSearch(tablut, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, timeout);
+        this.mcts = new TavolettaSearch(tablut, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, timeout-2);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -78,7 +75,6 @@ public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.
 	        }
 
 	        state = this.getCurrentState();
-	        System.out.println("1:"+System.currentTimeMillis());
 	        if (!state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE))
 	            break;
 
@@ -91,15 +87,12 @@ public class MelanzaninaMinMax extends it.unibo.ai.didattica.competition.tablut.
 	    		CanonicalState transformed = CanonicalState.from(((State) state));
 	    		// tree <-- NODE(state)
 	    		mcts.setLogEnabled(false);
-	        	mcts1.setLogEnabled(false);
 
 	        	Action best=mcts.makeDecision(transformed);
-	        	Action best1 = mcts1.makeDecision(transformed);
+	        	//Action best1 = mcts1.makeDecision(transformed);
 	    		long time = System.currentTimeMillis();
-	        	System.out.println(System.currentTimeMillis()-time);
 	        	System.out.println(transformed.getApplied());
-	        	System.out.println(best);
-	        	best = transformed.getInverse().reverseAction((Action)best);
+	        	best = transformed.getApplied().reverseAction((Action)best);
 	        	System.out.println(best);
 	            try {
 	                this.write(best);
