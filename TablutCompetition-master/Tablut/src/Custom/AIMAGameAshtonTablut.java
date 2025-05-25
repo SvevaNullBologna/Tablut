@@ -930,7 +930,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 				e.printStackTrace();
 				System.exit(3);
 			}
-		State result = results.get(state).get(action).clone();
+		State result = CanonicalState.from(results.get(state).get(action).clone());
 		if (drawConditions.containsKey(result) && drawConditions.get(result)
 				.contains(((CanonicalState) result).getApplied().compose(drawConditions.get(result).getLast())))
 			result.setTurn(State.Turn.DRAW);
