@@ -185,6 +185,7 @@ public class CanonicalState extends StateTablut {
 						((char) ((originalTo % 10) + 'a')) + "" + (originalTo / 10 + 1), a.getTurn());
 			} catch (IOException e) {
 				e.printStackTrace();
+				System.exit(2);
 			}
 			return applied;
 		}

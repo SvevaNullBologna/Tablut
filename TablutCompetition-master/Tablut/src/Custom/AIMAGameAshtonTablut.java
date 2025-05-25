@@ -983,7 +983,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	}
 
 	public void setDrawConditions(Map<State, List<Symmetry>> drawConditions) {
-		this.drawConditions = drawConditions;
+		this.drawConditions = new HashMap<State, List<Symmetry>>(drawConditions);
 	}
 
 	@Override

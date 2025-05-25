@@ -1,6 +1,7 @@
 package aima.core.search.adversarial;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -99,7 +100,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 		if(((State)state).getBoard()[2][2].toString().equals("K"))
 			System.out.print("");
 		List<A> results = orderActions(state, game.getActions(state), player, 0);
-		Map<State, List<Symmetry>> drawConditions=g.getDrawConditions();
+		Map<State, List<Symmetry>> realDrawConditions=new HashMap<State, List<Symmetry>>(g.getDrawConditions()); 
 		timer.start();
 		currDepthLimit = 0;
 		do {
@@ -129,7 +130,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 						break; // exit from iterative deepening loop
 				}
 			}
-			g.setDrawConditions(drawConditions);
+			g.setDrawConditions(realDrawConditions);
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
 		System.out.println(state.toString()+ results.get(0));			
 		return results.get(0);
