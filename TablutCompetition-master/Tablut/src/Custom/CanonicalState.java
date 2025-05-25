@@ -129,10 +129,6 @@ public class CanonicalState extends StateTablut {
 				return ROTATE_270;
 			case ROTATE_270:
 				return ROTATE_90;
-			case REFLECT_DIAGONAL_MAIN:
-				return REFLECT_DIAGONAL_MAIN;
-			case REFLECT_DIAGONAL_ANTI:
-				return REFLECT_DIAGONAL_ANTI;
 			default:
 				return this; // IDENTITY, ROTATE_180, REFLECT_HORIZONTAL, REFLECT_VERTICAL
 			}
