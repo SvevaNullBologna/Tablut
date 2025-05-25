@@ -3,6 +3,8 @@ package aima.core.search.adversarial;
 import java.util.ArrayList;
 import java.util.List;
 
+import Custom.AIMAGameAshtonTablut;
+import Custom.CanonicalState;
 import aima.core.search.framework.Metrics;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
@@ -84,17 +86,19 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	@Override
 	public A makeDecision(S state) {
 		State s=(State)state;
+		AIMAGameAshtonTablut g = (AIMAGameAshtonTablut)game;
 		int currentPawns=s.getNumberOf(Pawn.BLACK)+s.getNumberOf(Pawn.WHITE);
 		if(currentPawns<lastPawns)
-			game.clearCache();
-		lastPawns=currentPawns;
-		
+			g.clearCache(currentPawns);
+		lastPawns=currentPawns;		
 		metrics = new Metrics();
 		StringBuffer logText = null;
 		P player = game.getPlayer(state);
 		if(((State)state).getBoard()[2][2].toString().equals("K"))
 			System.out.print("");
 		List<A> results = orderActions(state, game.getActions(state), player, 0);
+		List<CanonicalState> drawConditions=g.getDrawConditions(s);
+
 		timer.start();
 		currDepthLimit = 0;
 		do {
@@ -124,6 +128,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 						break; // exit from iterative deepening loop
 				}
 			}
+			g.setDrawConditions(drawConditions);
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
 		System.out.println(state.toString()+ results.get(0));			
 		return results.get(0);

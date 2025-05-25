@@ -578,7 +578,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return repeated_moves_allowed;
 	}
 
-/////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////
 
 	/**
 	 * Auxiliary method used to check wheter an action is allowed or not for a given
@@ -721,7 +721,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return true;
 	}
 
-/////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////
 
 	@Override
 	public Object clone() throws CloneNotSupportedException {
@@ -729,14 +729,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	}
 
 	public void clearCache(Integer newNumberOfPawn) {
-		for(State state: numberOfPawns.get(newNumberOfPawn+1)) {
+		for (State state : numberOfPawns.get(newNumberOfPawn + 1)) {
 			results.remove(state);
 			utilities.remove(state);
 			drawConditions.remove(state);
 		}
 	}
-	
-	
+
 	/**
 	 * Method that compute a list of all possible actions for the current player
 	 * according to the rules of the game
@@ -753,9 +752,9 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		if (!results.containsKey(state)) {
 			List<Action> possibleActions = new ArrayList<>();
 			List<String> possibleActionsSymmetries = new ArrayList<>();
-			int pawns = state.getNumberOf(Pawn.WHITE)+state.getNumberOf(Pawn.BLACK);
-			if(numberOfPawns.containsKey(pawns));
-			numberOfPawns.put(pawns, new ArrayList<State>());
+			int pawns = state.getNumberOf(Pawn.WHITE) + state.getNumberOf(Pawn.BLACK);
+			if (!numberOfPawns.containsKey(pawns))
+				numberOfPawns.put(pawns, new ArrayList<State>());
 			numberOfPawns.get(pawns).add(state);
 			results.put(state, new HashMap<>());
 			// Loop through rows
@@ -781,7 +780,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 							continue;
 						// Search on top of pawn
 						try {
-							for (int k = i-1; k >= 0; k--) {
+							for (int k = i - 1; k >= 0; k--) {
 								// Break if pawn is out of citadels, and it is moving on a citadel
 								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(k, j))) {
 									break;
@@ -795,8 +794,8 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 									if (!possibleActionsSymmetries.contains(action.toString())
 											&& isPossibleMove(state.clone(), action)) {
 										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
+										possibleActionsSymmetries.addAll(symmetriesOfState.stream()
+												.map(s -> s.reverseAction(action).toString()).toList());
 									}
 								}
 								/*
@@ -806,7 +805,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 								 */
 							}
 							// Search on bottom of pawn
-							for (int k = i+1; k < state.getBoard().length; k++) {
+							for (int k = i + 1; k < state.getBoard().length; k++) {
 								// Break if pawn is out of citadels, and it is moving on a citadel
 								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(k, j))) {
 									break;
@@ -820,8 +819,8 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 									if (!possibleActionsSymmetries.contains(action.toString())
 											&& isPossibleMove(state.clone(), action)) {
 										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
+										possibleActionsSymmetries.addAll(symmetriesOfState.stream()
+												.map(s -> s.reverseAction(action).toString()).toList());
 									}
 								}
 								/*
@@ -832,7 +831,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 							}
 
 							// Search on left of pawn
-							for (int k = j-1; k >= 0; k--) {
+							for (int k = j - 1; k >= 0; k--) {
 								// Break if pawn is out of citadels, and it is moving on a citadel
 								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(i, k))) {
 									break;
@@ -846,8 +845,8 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 									if (!possibleActionsSymmetries.contains(action.toString())
 											&& isPossibleMove(state.clone(), action)) {
 										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
+										possibleActionsSymmetries.addAll(symmetriesOfState.stream()
+												.map(s -> s.reverseAction(action).toString()).toList());
 									}
 								}
 								/*
@@ -857,7 +856,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 								 */
 							}
 							// Search on right of pawn
-							for (int k = j+1; k < state.getBoard().length; k++) {
+							for (int k = j + 1; k < state.getBoard().length; k++) {
 								// Break if pawn is out of citadels, and it is moving on a citadel
 								if (!citadels.contains(state.getBox(i, j)) && citadels.contains(state.getBox(i, k))) {
 									break;
@@ -871,8 +870,8 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 									if (!possibleActionsSymmetries.contains(action.toString())
 											&& isPossibleMove(state.clone(), action)) {
 										possibleActions.add(action);
-										possibleActionsSymmetries.addAll(
-												symmetriesOfState.stream().map(s -> s.reverseAction(action).toString()).toList());
+										possibleActionsSymmetries.addAll(symmetriesOfState.stream()
+												.map(s -> s.reverseAction(action).toString()).toList());
 									}
 								}
 								/*
@@ -888,12 +887,12 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 					}
 				}
 			}
-			possibleActions.stream().forEach(p->results.get(state).put(p, null));
+			possibleActions.stream().forEach(p -> results.get(state).put(p, null));
 			return possibleActions;
 		}
 		return results.get(state).keySet().stream().toList();
 
-	// actions = results.get(canonical).keySet().stream().toList();
+		// actions = results.get(canonical).keySet().stream().toList();
 	}
 
 	/**
@@ -909,7 +908,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	public State getResult(State state, Action action) {
 		if (!results.containsKey(state))
 			results.put(state, new HashMap<>());
-		if (!results.get(state).containsKey(action) || results.get(state).get(action)==null)
+		if (!results.get(state).containsKey(action) || results.get(state).get(action) == null)
 			try {
 				State result = movePawn(state.clone(), action);
 				// State result = CanonicalState.from(checkMove(state.clone(), action));
