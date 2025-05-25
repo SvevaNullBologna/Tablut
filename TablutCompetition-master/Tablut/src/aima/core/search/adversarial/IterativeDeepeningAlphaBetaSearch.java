@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import aima.core.search.framework.Metrics;
+import it.unibo.ai.didattica.competition.tablut.domain.State;
+import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
 
 /**
  * Implements an iterative deepening Minimax search with alpha-beta pruning and
@@ -29,6 +31,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	private Timer timer;
 	private boolean logEnabled;
 
+	private int lastPawns;
 	private Metrics metrics = new Metrics();
 
 	/**
@@ -65,6 +68,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 		this.utilMin = utilMin;
 		this.utilMax = utilMax;
 		this.timer = new Timer(time);
+		this.lastPawns=24;
 	}
 
 	public void setLogEnabled(boolean b) {
@@ -79,6 +83,12 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	 */
 	@Override
 	public A makeDecision(S state) {
+		State s=(State)state;
+		int currentPawns=s.getNumberOf(Pawn.BLACK)+s.getNumberOf(Pawn.WHITE);
+		if(currentPawns<lastPawns)
+			game.clearCache();
+		lastPawns=currentPawns;
+		
 		metrics = new Metrics();
 		StringBuffer logText = null;
 		P player = game.getPlayer(state);
