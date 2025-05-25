@@ -3,6 +3,7 @@ package aima.core.search.adversarial;
 import java.util.ArrayList;
 import java.util.List;
 
+import Custom.AIMAGameAshtonTablut;
 import aima.core.search.framework.Metrics;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
@@ -84,9 +85,10 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	@Override
 	public A makeDecision(S state) {
 		State s=(State)state;
+		AIMAGameAshtonTablut g = (AIMAGameAshtonTablut)game;
 		int currentPawns=s.getNumberOf(Pawn.BLACK)+s.getNumberOf(Pawn.WHITE);
 		if(currentPawns<lastPawns)
-			game.clearCache();
+			g.clearCache(currentPawns);
 		lastPawns=currentPawns;
 		
 		metrics = new Metrics();
