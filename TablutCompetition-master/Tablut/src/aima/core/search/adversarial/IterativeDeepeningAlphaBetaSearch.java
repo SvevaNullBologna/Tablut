@@ -2,9 +2,11 @@ package aima.core.search.adversarial;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import Custom.AIMAGameAshtonTablut;
 import Custom.CanonicalState;
+import Custom.CanonicalState.Symmetry;
 import aima.core.search.framework.Metrics;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
@@ -97,8 +99,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 		if(((State)state).getBoard()[2][2].toString().equals("K"))
 			System.out.print("");
 		List<A> results = orderActions(state, game.getActions(state), player, 0);
-		List<CanonicalState> drawConditions=g.getDrawConditions(s);
-
+		Map<State, List<Symmetry>> drawConditions=g.getDrawConditions();
 		timer.start();
 		currDepthLimit = 0;
 		do {

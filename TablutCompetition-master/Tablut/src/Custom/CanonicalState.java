@@ -255,4 +255,9 @@ public class CanonicalState extends StateTablut {
 	public List<Symmetry> getIsSymmetricalBy() {
 		return isSymmetricalBy;
 	}
+
+	public void setApplied(Symmetry applied) {
+		this.applied = applied;
+		this.inverse = applied.getInverse();
+	}
 }

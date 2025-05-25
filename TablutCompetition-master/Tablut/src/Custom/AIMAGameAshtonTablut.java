@@ -7,8 +7,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,9 +54,9 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private List<String> citadels;
 	private Map<State, Map<Action, State>> results = new HashMap<>();
 	private Map<State, Double> utilities = new HashMap<>();
-	private List<CanonicalState> drawConditions = new ArrayList<>();
+	private Map<State, List<Symmetry>> drawConditions = new HashMap<>();
 	private Map<Integer, List<State>> numberOfPawns = new HashMap<>();
-	
+
 	public AIMAGameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName,
 			String blackName) {
 		this(new StateTablut(), repeated_moves_allowed, cache_size, logs_folder, whiteName, blackName);
@@ -748,7 +750,12 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	@Override
 	public List<Action> getActions(State state) {
 		State.Turn turn = state.getTurn();
-		this.drawConditions.add((CanonicalState) state);
+		if (!drawConditions.containsKey(state)) {
+			drawConditions.put(state, new ArrayList<>());
+			drawConditions.get(state).add(((CanonicalState) state).getApplied());
+		} else
+			drawConditions.get(state)
+					.add(drawConditions.get(state).getLast().compose(((CanonicalState) state).getApplied()));
 		if (!results.containsKey(state)) {
 			List<Action> possibleActions = new ArrayList<>();
 			List<String> possibleActionsSymmetries = new ArrayList<>();
@@ -923,7 +930,11 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 				e.printStackTrace();
 				System.exit(3);
 			}
-		return results.get(state).get(action);
+		State result = results.get(state).get(action).clone();
+		if (drawConditions.containsKey(result) && drawConditions.get(result)
+				.contains(((CanonicalState) result).getApplied().compose(drawConditions.get(result).getLast())))
+			result.setTurn(State.Turn.DRAW);
+		return result;
 	}
 
 	/**
@@ -967,12 +978,11 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return utilities.get(state);
 	}
 
-	public List<CanonicalState> getDrawConditions(CanonicalState newState) {
-		drawConditions.add(newState);
+	public Map<State, List<Symmetry>> getDrawConditions() {
 		return drawConditions;
 	}
-	
-	public void setDrawConditions(List<CanonicalState> drawConditions) {
+
+	public void setDrawConditions(Map<State, List<Symmetry>> drawConditions) {
 		this.drawConditions = drawConditions;
 	}
 
