@@ -50,7 +50,11 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private FileHandler fh;
 	private Logger loggGame;
 	private List<String> citadels;
-
+	private Map<State, Map<Action, State>> results = new HashMap<>();
+	private static Map<State, Double> utilities = new HashMap<>();
+	private static Map<State, Symmetry> drawConditions = new HashMap<>();
+	private static Map<Integer, List<State>> numberOfPawns = new HashMap<>();
+	
 	public AIMAGameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName,
 			String blackName) {
 		this(new StateTablut(), repeated_moves_allowed, cache_size, logs_folder, whiteName, blackName);
@@ -724,10 +728,15 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return super.clone();
 	}
 
-	private Map<State, Map<Action, State>> results = new HashMap<>();
-
-	private static Map<State, Double> utilities = new HashMap<>();
-
+	public void clearCache(Integer newNumberOfPawn) {
+		for(State state: numberOfPawns.get(newNumberOfPawn+1)) {
+			results.remove(state);
+			utilities.remove(state);
+			drawConditions.remove(state);
+		}
+	}
+	
+	
 	/**
 	 * Method that compute a list of all possible actions for the current player
 	 * according to the rules of the game
@@ -743,6 +752,10 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		if (!results.containsKey(state)) {
 			List<Action> possibleActions = new ArrayList<>();
 			List<String> possibleActionsSymmetries = new ArrayList<>();
+			int pawns = state.getNumberOf(Pawn.WHITE)+state.getNumberOf(Pawn.BLACK);
+			if(numberOfPawns.containsKey(pawns));
+			numberOfPawns.put(pawns, new ArrayList<State>());
+			numberOfPawns.get(pawns).add(state);
 			results.put(state, new HashMap<>());
 			// Loop through rows
 			for (int i = 0; i < 9; i++) {
