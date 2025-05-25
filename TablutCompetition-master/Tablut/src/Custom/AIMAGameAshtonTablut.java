@@ -51,9 +51,9 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private Logger loggGame;
 	private List<String> citadels;
 	private Map<State, Map<Action, State>> results = new HashMap<>();
-	private static Map<State, Double> utilities = new HashMap<>();
-	private static Map<State, Symmetry> drawConditions = new HashMap<>();
-	private static Map<Integer, List<State>> numberOfPawns = new HashMap<>();
+	private Map<State, Double> utilities = new HashMap<>();
+	private List<CanonicalState> drawConditions = new ArrayList<>();
+	private Map<Integer, List<State>> numberOfPawns = new HashMap<>();
 	
 	public AIMAGameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName,
 			String blackName) {
@@ -749,6 +749,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	@Override
 	public List<Action> getActions(State state) {
 		State.Turn turn = state.getTurn();
+		this.drawConditions.add((CanonicalState) state);
 		if (!results.containsKey(state)) {
 			List<Action> possibleActions = new ArrayList<>();
 			List<String> possibleActionsSymmetries = new ArrayList<>();
@@ -967,22 +968,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return utilities.get(state);
 	}
 
-	public static double getUtilityStatic(State state, State.Turn turn) {
-		if (!utilities.containsKey(state)) {
-			// Terminal state
-			if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.BLACKWIN))
-					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.WHITEWIN)))
-				return Double.POSITIVE_INFINITY; // Win
-			else if ((turn.equals(State.Turn.BLACK) && state.getTurn().equals(State.Turn.WHITEWIN))
-					|| (turn.equals(State.Turn.WHITE) && state.getTurn().equals(State.Turn.BLACKWIN)))
-				return Double.NEGATIVE_INFINITY; // Lose
-
-			// Non-terminal state => get Heuristics for the current state
-			Heuristics heuristics = turn.equals(State.Turn.WHITE) ? new WhiteHeuristics(state)
-					: new BlackHeuristics(state);
-			utilities.put(state, heuristics.evaluateState());
-		}
-		return utilities.get(state);
+	public List<CanonicalState> getDrawConditions(CanonicalState newState) {
+		drawConditions.add(newState);
+		return drawConditions;
+	}
+	
+	public void setDrawConditions(List<CanonicalState> drawConditions) {
+		this.drawConditions = drawConditions;
 	}
 
 	@Override

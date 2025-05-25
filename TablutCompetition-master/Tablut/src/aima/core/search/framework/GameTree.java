@@ -125,7 +125,7 @@ public class GameTree<S, A> {
 		List<Node<S, A>> succ =  successors(node);
 		for (Node<S, A> child : successors(node)) {
 			double ni = Ni.get(child.getState());
-			double playouts = (ni)*AIMAGameAshtonTablut.getUtilityStatic(((State)child.getState()), ((State)node.getState()).getTurn());
+			double playouts = (ni);
 			if (playouts > max_playouts) {
 				max_playouts = playouts;
 				best_children = new ArrayList<>();
