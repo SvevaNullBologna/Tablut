@@ -76,7 +76,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 		this.utilMin = utilMin;
 		this.utilMax = utilMax;
 		this.timer = new Timer(time);
-		this.lastPawns=24;
+		this.lastPawns = 24;
 	}
 
 	public void setLogEnabled(boolean b) {
@@ -89,24 +89,28 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	 * Monsio who had the idea of ordering actions by utility in subsequent
 	 * depth-limited search runs.
 	 */
-	private int move = 1;
 	@Override
-	public A makeDecision(S state) {State s=(State)state;
-		AIMAGameAshtonTablut g = (AIMAGameAshtonTablut)game;
-		int currentPawns=s.getNumberOf(Pawn.BLACK)+s.getNumberOf(Pawn.WHITE);
-		if(currentPawns<lastPawns)
-			g.clearCache(currentPawns);
-		lastPawns=currentPawns;		
+	public A makeDecision(S state) {
+		State s = (State) state;
+		long time ;
+		AIMAGameAshtonTablut g = (AIMAGameAshtonTablut) game;
+		int currentPawns = s.getNumberOf(Pawn.BLACK) + s.getNumberOf(Pawn.WHITE);
+		/*if (currentPawns < lastPawns)
+			g.updateCache(currentPawns);
+		*/
+		lastPawns = currentPawns;
 		metrics = new Metrics();
 		StringBuffer logText = null;
 		P player = game.getPlayer(state);
-		if(((State)state).getBoard()[2][2].toString().equals("K"))
+		if (((State) state).getBoard()[2][2].toString().equals("K"))
 			System.out.print("");
 		List<A> results = orderActions(state, game.getActions(state), player, 0);
-		Map<State, List<Symmetry>> realDrawConditions=new HashMap<State, List<Symmetry>>(g.getDrawConditions()); 
+		Map<State, List<Symmetry>> realDrawConditions = new HashMap<State, List<Symmetry>>(g.getDrawConditions());
 		timer.start();
 		currDepthLimit = 0;
 		do {
+			time = System.currentTimeMillis();
+
 			incrementDepthLimit();
 			if (logEnabled)
 				logText = new StringBuffer("depth " + currDepthLimit + ": ");
@@ -134,14 +138,20 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 				}
 			}
 			g.setDrawConditions(realDrawConditions);
+			System.out.println("ITER: " + (System.currentTimeMillis() - time));
+			System.out.println(metrics.get(METRICS_NODES_EXPANDED));
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
+		System.out.println("ITER FINAL: " + (System.currentTimeMillis() - time));
+		System.out.println(metrics.get(METRICS_NODES_EXPANDED));
 		State post = (State) game.getResult(state, results.get(0));
 		post.setTurn(Turn.DRAW);
 		if (!realDrawConditions.containsKey(post))
 			realDrawConditions.put(post, new ArrayList<>());
-		realDrawConditions.get(post).add(((CanonicalState) post).getApplied().compose(realDrawConditions.get(post).size()>0? realDrawConditions.get(post).getLast():Symmetry.IDENTITY));
+		realDrawConditions.get(post).add(((CanonicalState) post).getApplied().compose(
+				realDrawConditions.get(post).size() > 0 ? realDrawConditions.get(post).getLast() : Symmetry.IDENTITY));
 		g.setDrawConditions(realDrawConditions);
-		System.out.println(state.toString()+ results.get(0));			
+		System.out.println(state.toString() + results.get(0));
+		g.clearCache();
 		return results.get(0);
 	}
 
@@ -199,11 +209,6 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	 * search step. This implementation increments the current depth limit by one.
 	 */
 	protected void incrementDepthLimit() {
-		if (currDepthLimit > 0) {
-			System.out.println(metrics.get(METRICS_NODES_EXPANDED));
-			if (Integer.valueOf(metrics.get(METRICS_NODES_EXPANDED)) < 2)
-				System.out.println();
-		}
 		currDepthLimit++;
 	}
 

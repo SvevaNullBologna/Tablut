@@ -55,7 +55,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	private Map<State, Map<Action, State>> results = new HashMap<>();
 	private Map<State, Double> utilities = new HashMap<>();
 	private Map<State, List<Symmetry>> drawConditions = new HashMap<>();
-	private Map<Integer, List<State>> numberOfPawns = new HashMap<>();
+	//private Map<Integer, List<State>> numberOfPawns = new HashMap<>();
 
 	public AIMAGameAshtonTablut(int repeated_moves_allowed, int cache_size, String logs_folder, String whiteName,
 			String blackName) {
@@ -730,12 +730,17 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 		return super.clone();
 	}
 
-	public void clearCache(Integer newNumberOfPawn) {
-		for (State state : numberOfPawns.get(newNumberOfPawn + 1)) {
+	public void updateCache(Integer newNumberOfPawn) {
+		/*for (State state : numberOfPawns.get(newNumberOfPawn + 1)) {
 			results.remove(state);
 			utilities.remove(state);
 			drawConditions.remove(state);
-		}
+		}*/
+	}
+	
+	public void clearCache() {
+		results.clear();
+		utilities.clear();
 	}
 
 	/**
@@ -749,6 +754,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public List<Action> getActions(State state) {
+		long time = System.currentTimeMillis();
 		State.Turn turn = state.getTurn();
 		if (!drawConditions.containsKey(state)) {
 			State s = state.clone();
@@ -759,12 +765,13 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 			drawConditions.get(state)
 					.add(drawConditions.get(state).getLast().compose(((CanonicalState) state).getApplied()));
 		if (!results.containsKey(state)) {
+
 			List<Action> possibleActions = new ArrayList<>();
 			List<String> possibleActionsSymmetries = new ArrayList<>();
-			int pawns = state.getNumberOf(Pawn.WHITE) + state.getNumberOf(Pawn.BLACK);
+			/*int pawns = state.getNumberOf(Pawn.WHITE) + state.getNumberOf(Pawn.BLACK);
 			if (!numberOfPawns.containsKey(pawns))
 				numberOfPawns.put(pawns, new ArrayList<State>());
-			numberOfPawns.get(pawns).add(state);
+			numberOfPawns.get(pawns).add(state);*/
 			results.put(state, new HashMap<>());
 			// Loop through rows
 			for (int i = 0; i < 9; i++) {
@@ -897,8 +904,8 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 				}
 			}
 			possibleActions.stream().forEach(p -> results.get(state).put(p, null));
-			return possibleActions;
 		}
+		//else System.out.println("GA: YES CACHED " + (System.currentTimeMillis() - time));
 		return results.get(state).keySet().stream().toList();
 
 		// actions = results.get(canonical).keySet().stream().toList();
@@ -915,6 +922,7 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 	 */
 	@Override
 	public State getResult(State state, Action action) {
+		long time = System.currentTimeMillis();
 		if (!results.containsKey(state))
 			results.put(state, new HashMap<>());
 		if (!results.get(state).containsKey(action) || results.get(state).get(action) == null)
@@ -926,12 +934,14 @@ public class AIMAGameAshtonTablut implements Game, aima.core.search.adversarial.
 					result = this.checkCaptureBlack(result, action);
 				else if (state.getTurn().equalsTurn("W")) {
 					result = this.checkCaptureWhite(result, action);
+					
 				}
 				results.get(state).put(action, CanonicalState.from(result));
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(3);
 			}
+		//else System.out.println("GA: YES CACHED " + (System.currentTimeMillis() - time));
 		State result = CanonicalState.from(results.get(state).get(action).clone());
 		Turn turn = result.getTurn();
 		result.setTurn(Turn.DRAW);
