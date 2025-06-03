@@ -1,35 +1,39 @@
 package Custom;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 
 
-public class MCTS extends MCTSBase {
+public class MCTS {
 	private final int max_time;
-	private final int max_memory = (int) (Runtime.getRuntime().maxMemory() * 0.75/1024);
+	private final long max_memory = (long) (Runtime.getRuntime().maxMemory() * 0.75/1024);
+	private final Game rules;
+
 
 	public MCTS(int max_time, Game rules) {
-		super(rules);
+		this.rules = rules;
 		this.max_time = max_time;
 	}
 
 	//Now I pass an updated tree. That means, we just go to the bottom of it and start from there, cutting previous possible branches
-	public TreeNode montecarlo(TreeNode partenza, State.Turn turn) throws IllegalStateException, NullPointerException {
+	public TreeNode montecarlo(TreeNode root, State.Turn turn) throws IllegalStateException, NullPointerException {
 		long startTime = System.currentTimeMillis();
 	    boolean hasSimulatedAtLeastOnce = false;
 
 		while (resourcesAvailable(startTime)) {
-			TreeNode selected = select(partenza, turn);
-			if (selected == null) continue;
+			TreeNode selected = select(root, turn);
+			if (selected == null) break;
 
 			List<TreeNode> children = expand(selected);
 			if (children == null || children.isEmpty()) continue;
 
-			TreeNode child = this.getChildWithBestUCT(children, turn);
-
+			TreeNode child = TreeNode.getChildWithBestUCT(children, turn);
 			if (child == null) continue;
 
 			double result = simulate(child);
@@ -41,14 +45,11 @@ public class MCTS extends MCTSBase {
 	        throw new IllegalStateException("Monte Carlo failed: no valid simulations were performed.");
 	    }
 
-		TreeNode answer = partenza.getMostVisitedChild();
-		if(answer != null){
-			return answer;
-		}
-		else{
+		TreeNode best = root.getMostVisitedChild();
+		if(best == null){
 			throw new NullPointerException("Monte Carlo failed: no valid child");
 		}
-
+		return best;
 	}
 
 
@@ -56,7 +57,7 @@ public class MCTS extends MCTSBase {
 		TreeNode node = starting_node;
 		while(!node.isTerminal() && node.hasBeenExpanded()) {//finché non trova un nodo foglia/terminale e non ha espanso tutto il nodo...
 			List<TreeNode> children = node.getChildren();
-			node = this.getChildWithBestUCT(children, turn); //cerca il nodo con il max UCT
+			node = TreeNode.getChildWithBestUCT(children, turn); //cerca il nodo con il max UCT
 			if(node==null) break; //se non c'è un nodo sotto, vuol dire chiamo arrivati al capolinea. Si ferma.
 		}
 		return node; //ATTEZIONE, può essere nullo!
@@ -75,25 +76,44 @@ public class MCTS extends MCTSBase {
 		return node.getChildren();
 	}
 
-	
+
 	private double simulate(TreeNode node) {
-		Double terminalValue = node.evaluateTerminalState();
-		if(terminalValue != Constants.NOT_A_TERMINAL_STATE){
-			return terminalValue; //evitiamo una simulazione inutile. Siamo in uno stato terminale dopotutto
-		}
-		else {
+		double terminalValue = node.evaluateTerminalState();
+		if (!Double.isNaN(terminalValue)) {
+			return terminalValue;
+		} else {
 			State simulating_state = node.getState().clone();
-			State.Turn starting_player = node.getState().getTurn(); // use original turn
+			State.Turn starting_player = node.getState().getTurn();
 
-			while (!isTerminal(simulating_state)) {
+			Set<State> visited = new HashSet<>();
+			visited.add(simulating_state);
+
+			int maxDepth = 100; // evita simulazioni infinite
+			int depth = 0;
+
+			while (!simulating_state.isTerminal() && depth < maxDepth) {
 				List<MoveResult> legalMoves = MoveResult.getLegalActionsAndResultingStates(simulating_state, rules);
-				if (legalMoves.isEmpty()) break;
 
-				MoveResult move = MoveResult.getRandomMove(legalMoves);
+				// Filtra mosse che portano a stati già visti
+				List<MoveResult> filteredMoves = legalMoves.stream()
+						.filter(m -> !visited.contains(m.resultingState))
+						.collect(Collectors.toList());
+
+				if (filteredMoves.isEmpty()) {
+					break; // siamo in loop o bloccati
+				}
+
+				MoveResult move = MoveResult.getRandomMove(filteredMoves);
 				simulating_state = move.resultingState;
+				visited.add(simulating_state);
+				depth++;
 			}
 
-			State.Turn outcome = simulating_state.getTurn(); // This now holds WHITEWIN, BLACKWIN, or DRAW
+			if (depth >= maxDepth) {
+				return Constants.DRAW(starting_player); // o penalizza con LOSS
+			}
+
+			State.Turn outcome = simulating_state.getTurn();
 
 			if (outcome == State.Turn.DRAW) {
 				return Constants.DRAW(starting_player);
@@ -107,7 +127,8 @@ public class MCTS extends MCTSBase {
 	}
 
 
-	
+
+
 	private void backpropagate(TreeNode node, double value) { //si propagano i risultati della simulazione lungo il percorso
 		while(node != null) {
 			node.VisitNode(value); //fa anche l'update già che visita

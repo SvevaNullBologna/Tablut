@@ -85,4 +85,34 @@ public class Action implements Serializable {
 		return Integer.parseInt(this.to.charAt(1) + "") - 1;
 	}
 
+	public static Action getPreviousAction(State previous, State current) {
+		String from = null;
+		String to = null;
+
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				State.Pawn prevPawn = previous.getPawn(i, j);
+				State.Pawn currPawn = current.getPawn(i, j);
+
+				if ((prevPawn == State.Pawn.WHITE || prevPawn == State.Pawn.BLACK || prevPawn == State.Pawn.KING)
+						&& currPawn == State.Pawn.EMPTY) {
+					from = previous.getBox(i, j);
+				} else if (prevPawn == State.Pawn.EMPTY &&
+						(currPawn == State.Pawn.WHITE || currPawn == State.Pawn.BLACK || currPawn == State.Pawn.KING)) {
+					to = current.getBox(i, j);
+				}
+
+				if (from != null && to != null) {
+					try {
+						return new Action(from, to, previous.getTurn());
+					} catch (IOException e) {
+						return null;
+					}
+				}
+			}
+		}
+
+		return null; // No move detected
+	}
+
 }

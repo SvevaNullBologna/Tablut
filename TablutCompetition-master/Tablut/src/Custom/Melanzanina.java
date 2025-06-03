@@ -2,6 +2,7 @@ package Custom;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.List;
 
 import it.unibo.ai.didattica.competition.tablut.domain.*;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
@@ -40,32 +41,61 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 
 	}
 
-	private void updateTreeFromServer(){
+	private void updateTreeFromServer() {
 		try {
 			this.read();
 			State current = this.getCurrentState();
-			if (!current.getTurn().equals(Turn.BLACK) && !current.getTurn().equals(Turn.WHITE)) {//se non è il turno di nessuno
-				return; //termina partita
+
+			if (!current.getTurn().equals(Turn.BLACK) && !current.getTurn().equals(Turn.WHITE)) {
+				return; // Game over
 			}
 
-			if(this.tree == null){
+			if (this.tree == null) {
 				this.tree = new TreeNode(current, null, null);
+				writeLogs.write("Tree initialized.\n");
 				return;
 			}
+
+			writeLogs.write("Reading and updating tree...\n");
+
+			// Ensure the tree is expanded before trying to match
+			if (!tree.hasBeenExpanded()) {
+				List<MoveResult> legalMoves = MoveResult.getLegalActionsAndResultingStates(tree.getState(), tablut);
+				tree.ExpandNode(legalMoves);
+			}
+
+			// Try to match the current state with an existing child
 			TreeNode matchingChild = this.tree.findChildWithState(current);
-			if(matchingChild!=null){
+			if (matchingChild != null) {
 				matchingChild.cutParent();
-				this.tree =  matchingChild;
+				this.tree = matchingChild;
+				writeLogs.write("Tree reused: matched existing child.\n");
+				return;
 			}
-			else{
-				Action latestAction = mcts.getPreviousAction(this.tree.getState(), current);
-				this.tree = new TreeNode(current, this.tree, latestAction);
+
+			// Try to reconstruct the path from legal moves
+			List<MoveResult> legalMoves = MoveResult.getLegalActionsAndResultingStates(this.tree.getState(), tablut);
+			for (MoveResult move : legalMoves) {
+				if (move.resultingState.equals(current)) {
+					TreeNode newChild = new TreeNode(move.resultingState, this.tree, move.action);
+					this.tree.addChild(newChild);
+					newChild.cutParent();
+					this.tree = newChild;
+					writeLogs.write("Tree reused: reconstructed from legal move.\n");
+					return;
+				}
 			}
+
+			// If all else fails, reset the tree
+			Action latestAction = Action.getPreviousAction(this.tree.getState(), current);
+			this.tree = new TreeNode(current, null, latestAction);
+			writeLogs.write("Tree reset: no match found.\n");
+
+		} catch (IOException | ClassNotFoundException e) {
+			writeLogs.handleCriticalError("Errore critico durante la lettura dal server: ", e);
 		}
-		catch (IOException | ClassNotFoundException e){
-			writeLogs.handleCriticalError("Errore critico durante la lettura dal server: ", e );
-		}
-    }
+	}
+
 
 
 	private void send_result_to_server(TreeNode result){
@@ -101,6 +131,11 @@ public class Melanzanina extends it.unibo.ai.didattica.competition.tablut.client
 						throw new IllegalStateException("MCTS returned no valid move.");
 					}
 					send_result_to_server(bestNode);
+					do{
+						Thread.sleep(100);
+						updateTreeFromServer();
+					}
+					while (tree.getState().getTurn().equals(this.turn));
 				}
 				catch (Exception e) {
 					writeLogs.handleCriticalError("Errore critico durante lo svolgimento della logica dell'algoritmo: ", e);

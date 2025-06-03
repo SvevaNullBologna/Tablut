@@ -263,4 +263,9 @@ public abstract class State {
 		return count;
 	}
 
+	public boolean isTerminal() {
+		State.Turn turn = this.getTurn();
+		return turn == State.Turn.WHITEWIN || turn == State.Turn.BLACKWIN || turn == State.Turn.DRAW;
+	}
+
 }

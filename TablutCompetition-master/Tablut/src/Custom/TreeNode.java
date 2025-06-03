@@ -4,11 +4,12 @@ import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class TreeNode{
-    private State state;
+    private final State state;
     private final State.Turn turn;
     private TreeNode parent;
     private final List<TreeNode> children;
@@ -16,13 +17,13 @@ public class TreeNode{
     private final int depth;
     private int visitCount;
     private boolean hasBeenExpanded;
-    public  Double value;
+    public  double value;
 
     public TreeNode(State state, TreeNode parent, Action action) {
     	this.state = state;
     	this.turn = state.getTurn();
         if(parent==null){
-            this.parent = parent;
+            this.parent = null;
             this.depth = 0;
             this.action = null;
         }
@@ -58,10 +59,6 @@ public class TreeNode{
         return action;
     }
 
-    public int getDepth() {
-    	return depth;
-    }
-
     public int getVisitCount() {
     	return this.visitCount;
     }
@@ -80,14 +77,8 @@ public class TreeNode{
     	node.parent = this;
     	children.add(node);
     }
-    
-    public void removeChild(TreeNode node) throws Exception{
-    	if(!children.remove(node)) {
-    		throw new Exception(node + " NOT FOUND ");
-    	}
-    }
-    
-    public void VisitNode(Double value) { 
+
+    public void VisitNode(Double value) {
     	if(value != null) {
     		this.value += value;
     	}
@@ -105,10 +96,11 @@ public class TreeNode{
     	
     	for(MoveResult move : legalMoves) {
     		TreeNode child = new TreeNode(move.resultingState, this, move.action); //dove salviamo il value? Nel padre o nel figlio?
-            double value = child.evaluateTerminalState();
             this.addChild(child);
-            if(!Double.isNaN(value)){
-                child.VisitNode(value);
+
+            double terminalValue = child.evaluateTerminalState();
+            if(!Double.isNaN(terminalValue)){
+                child.VisitNode(terminalValue);
             }
 
     	}
@@ -155,11 +147,11 @@ public class TreeNode{
         }
     }
 
-    public double UCB() {
+    public double UCB(State.Turn turn ) {
         TreeNode parent = this.getParent();
 
         Double terminalValue = this.evaluateTerminalState();
-        if(terminalValue!=null && !terminalValue.isNaN()){
+        if(terminalValue!=null && !Double.isNaN(terminalValue)){
             //se è terminale, allora restituisci i valori terminal
             return terminalValue;
         }
@@ -178,7 +170,16 @@ public class TreeNode{
         double parentVisits = Math.max(parent.getVisitCount(), 1e-6);
         double nodeVisits = Math.max(this.getVisitCount(), 1e-6);
 
-        return this.getAverageValue() + Constants.C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
+        double exploitation = this.getAverageValue();
+
+        if(turn == State.Turn.WHITE){
+            exploitation *= 1;
+        }
+        else{
+            exploitation *= -1;
+        }
+
+        return  exploitation + Constants.C * Math.sqrt(Math.log(parentVisits) / nodeVisits);
     }
 
     public void cutParent(){
@@ -196,9 +197,40 @@ public class TreeNode{
 
 
     public static TreeNode getRandomNode(List<TreeNode> nodes) {
+        Collections.shuffle(nodes);
         return nodes.get(new Random().nextInt(nodes.size()));
 
     }
+
+    public static TreeNode getChildWithBestUCT(List<TreeNode> children, State.Turn turn){
+        // 1. Priorità ai nodi non visitati
+        Collections.shuffle(children);
+        return getChildWithMaxUCT(children, turn);
+    }
+
+    public static TreeNode getChildWithMaxUCT(List<TreeNode> children, State.Turn turn) {
+        double maxUCT = Constants.initial_maxUCT;
+        List<TreeNode> bestNodes = new ArrayList<>(); //si possono avere pareggi tra i nodi figli
+        for(TreeNode child: children) {
+            double uctValue = child.UCB(turn);
+            if(uctValue > maxUCT) { //se un nodo è migliore, sostituiamo il max
+                maxUCT = uctValue;
+                bestNodes.clear();
+                bestNodes.add(child);
+            }
+            else if(uctValue == maxUCT) { //se c'è un pareggio, aggiungiamo il figlio alla lista
+                bestNodes.add(child);
+            }
+        }
+
+        if(bestNodes.isEmpty()) {
+            return null;
+        }
+        else {
+            return TreeNode.getRandomNode(bestNodes); //risolviamo i pareggi scegliendone uno randomicamente
+        }
+    }
+
 
 
     @Override
@@ -210,7 +242,9 @@ public class TreeNode{
                 "totalValue: " +  this.value + "\n" +
                 "visitCount: " + this.visitCount + "\n" +
                 "hasBeenExpanded: " + this.hasBeenExpanded + "\n" +
-                "is_root: " + (this.parent == null ? true : false) + "\n" +
-                "has_children" + (this.children.isEmpty() ? false : true) + "\n\n";
+                "is_root: " + (this.parent == null) + "\n" +
+                "has_children" + (!this.children.isEmpty()) + "\n\n";
     }
+
+
 }
