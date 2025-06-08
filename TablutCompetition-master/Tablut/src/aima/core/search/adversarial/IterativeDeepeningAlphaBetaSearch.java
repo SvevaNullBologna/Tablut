@@ -1,6 +1,5 @@
 package aima.core.search.adversarial;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,8 +11,6 @@ import Custom.CanonicalState.Symmetry;
 import aima.core.search.framework.Metrics;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
-import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
-import it.unibo.ai.didattica.competition.tablut.domain.Action;
 
 /**
  * Implements an iterative deepening Minimax search with alpha-beta pruning and
@@ -91,6 +88,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 	 */
 	@Override
 	public A makeDecision(S state) {
+<<<<<<< HEAD
 		State s = (State) state;
 		long time ;
 		AIMAGameAshtonTablut g = (AIMAGameAshtonTablut) game;
@@ -99,6 +97,14 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 			g.updateCache(currentPawns);
 		*/
 		lastPawns = currentPawns;
+=======
+		State s=(State)state;
+		AIMAGameAshtonTablut g = (AIMAGameAshtonTablut)game;
+		int currentPawns=s.getNumberOf(Pawn.BLACK)+s.getNumberOf(Pawn.WHITE);
+		if(currentPawns<lastPawns)
+			g.clearCache(currentPawns);
+		lastPawns=currentPawns;		
+>>>>>>> parent of eeeafed (FinalTrue)
 		metrics = new Metrics();
 		StringBuffer logText = null;
 		P player = game.getPlayer(state);
@@ -141,6 +147,7 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 			System.out.println("ITER: " + (System.currentTimeMillis() - time));
 			System.out.println(metrics.get(METRICS_NODES_EXPANDED));
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
+<<<<<<< HEAD
 		System.out.println("ITER FINAL: " + (System.currentTimeMillis() - time));
 		System.out.println(metrics.get(METRICS_NODES_EXPANDED));
 		State post = (State) game.getResult(state, results.get(0));
@@ -152,6 +159,9 @@ public class IterativeDeepeningAlphaBetaSearch<S, A, P> implements AdversarialSe
 		g.setDrawConditions(realDrawConditions);
 		System.out.println(state.toString() + results.get(0));
 		g.clearCache();
+=======
+		System.out.println(state.toString()+ results.get(0));			
+>>>>>>> parent of eeeafed (FinalTrue)
 		return results.get(0);
 	}
 
